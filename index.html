@@ -1,0 +1,2518 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>HealthSnap – AI Wellness Companion | Health Awareness Prototype</title>
+  <meta name="description" content="Turn your smartphone into a personal AI wellness companion. Snap food photos, speak your symptoms, track health patterns, and receive personalized guidance." />
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2310b981' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'><path d='M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z'/></svg>" />
+
+  <!-- Google Fonts: Inter & Outfit -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+
+  <!-- Lucide Icons & React 18 & Babel Standalone -->
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <style>
+    /* ==========================================
+       HEALTHSNAP DESIGN SYSTEM (CSS VARIABLES)
+       ========================================== */
+    :root {
+      --primary: #10b981;
+      --primary-hover: #059669;
+      --primary-light: #d1fae5;
+      --primary-dark: #047857;
+      --primary-glow: rgba(16, 185, 129, 0.25);
+
+      --secondary: #06b6d4;
+      --secondary-hover: #0891b2;
+      --secondary-light: #cffafe;
+      --secondary-glow: rgba(6, 182, 212, 0.25);
+
+      --accent-purple: #8b5cf6;
+      --accent-amber: #f59e0b;
+      --accent-rose: #f43f5e;
+      --accent-blue: #3b82f6;
+
+      --bg-app: #f8fafc;
+      --bg-surface: #ffffff;
+      --bg-surface-elevated: #ffffff;
+      --bg-subtle: #f1f5f9;
+      --bg-glass: rgba(255, 255, 255, 0.85);
+
+      --border-subtle: #e2e8f0;
+      --divider: #f1f5f9;
+
+      --text-main: #0f172a;
+      --text-secondary: #475569;
+      --text-muted: #64748b;
+      --text-inverse: #ffffff;
+
+      --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+      --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.07), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
+      --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.08), 0 4px 6px -4px rgba(0, 0, 0, 0.04);
+      --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.08);
+      --shadow-glow-primary: 0 0 24px -4px rgba(16, 185, 129, 0.35);
+
+      --radius-sm: 8px;
+      --radius-md: 14px;
+      --radius-lg: 20px;
+      --radius-xl: 28px;
+      --radius-full: 9999px;
+
+      --font-heading: 'Outfit', -apple-system, sans-serif;
+      --font-body: 'Inter', -apple-system, sans-serif;
+    }
+
+    [data-theme='dark'] {
+      --bg-app: #090d16;
+      --bg-surface: #111827;
+      --bg-surface-elevated: #1f2937;
+      --bg-subtle: #1e293b;
+      --bg-glass: rgba(17, 24, 39, 0.85);
+
+      --border-subtle: #1e293b;
+      --divider: #1f2937;
+
+      --text-main: #f8fafc;
+      --text-secondary: #94a3b8;
+      --text-muted: #64748b;
+
+      --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.4);
+      --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.45);
+      --shadow-lg: 0 10px 20px -3px rgba(0, 0, 0, 0.5);
+      --shadow-xl: 0 20px 30px -5px rgba(0, 0, 0, 0.6);
+      --shadow-glow-primary: 0 0 30px -4px rgba(16, 185, 129, 0.45);
+    }
+
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    html {
+      scroll-behavior: smooth;
+      font-family: var(--font-body);
+      color: var(--text-main);
+      background-color: var(--bg-app);
+      -webkit-font-smoothing: antialiased;
+    }
+
+    body {
+      min-height: 100vh;
+      line-height: 1.5;
+      overflow-x: hidden;
+    }
+
+    h1, h2, h3, h4, h5, h6 {
+      font-family: var(--font-heading);
+      letter-spacing: -0.02em;
+      font-weight: 700;
+      color: var(--text-main);
+    }
+
+    p {
+      color: var(--text-secondary);
+    }
+
+    button {
+      font-family: inherit;
+      cursor: pointer;
+      border: none;
+      background: none;
+      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    input, textarea, select {
+      font-family: inherit;
+      color: var(--text-main);
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-md);
+      outline: none;
+      transition: border-color 0.15s ease, box-shadow 0.15s ease;
+    }
+
+    input:focus, textarea:focus, select:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px var(--primary-glow);
+    }
+
+    @keyframes pulseGlow {
+      0%, 100% {
+        box-shadow: 0 0 15px rgba(16, 185, 129, 0.3);
+        transform: scale(1);
+      }
+      50% {
+        box-shadow: 0 0 30px rgba(16, 185, 129, 0.6);
+        transform: scale(1.02);
+      }
+    }
+
+    @keyframes laserScan {
+      0% { top: 6%; opacity: 0.8; }
+      50% { top: 92%; opacity: 1; }
+      100% { top: 6%; opacity: 0.8; }
+    }
+
+    @keyframes audioWave {
+      0%, 100% { height: 8px; }
+      50% { height: 36px; }
+    }
+
+    @keyframes fadeInUp {
+      from { opacity: 0; transform: translateY(14px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    .gradient-text {
+      background: linear-gradient(135deg, var(--primary) 0%, #06b6d4 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      display: inline-block;
+    }
+
+    .badge-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 10px;
+      font-size: 0.72rem;
+      font-weight: 700;
+      border-radius: var(--radius-full);
+      letter-spacing: 0.03em;
+      text-transform: uppercase;
+    }
+
+    .badge-emerald {
+      background: rgba(16, 185, 129, 0.12);
+      color: #059669;
+      border: 1px solid rgba(16, 185, 129, 0.25);
+    }
+    [data-theme='dark'] .badge-emerald { color: #34d399; }
+
+    .badge-blue {
+      background: rgba(6, 182, 212, 0.12);
+      color: #0891b2;
+      border: 1px solid rgba(6, 182, 212, 0.25);
+    }
+    [data-theme='dark'] .badge-blue { color: #38bdf8; }
+
+    .badge-amber {
+      background: rgba(245, 158, 11, 0.12);
+      color: #d97706;
+      border: 1px solid rgba(245, 158, 11, 0.25);
+    }
+
+    .btn-primary {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 12px 24px;
+      background: linear-gradient(135deg, var(--primary) 0%, #0d9488 100%);
+      color: #ffffff;
+      font-weight: 600;
+      font-size: 0.95rem;
+      border-radius: var(--radius-md);
+      box-shadow: 0 4px 14px rgba(16, 185, 129, 0.35);
+      transition: all 0.2s ease;
+    }
+
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(16, 185, 129, 0.5);
+    }
+
+    .btn-secondary {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 12px 24px;
+      background: var(--bg-surface);
+      color: var(--text-main);
+      border: 1px solid var(--border-subtle);
+      font-weight: 600;
+      font-size: 0.95rem;
+      border-radius: var(--radius-md);
+      transition: all 0.2s ease;
+    }
+
+    .btn-secondary:hover {
+      background: var(--bg-subtle);
+      border-color: #cbd5e1;
+      transform: translateY(-1px);
+    }
+
+    .btn-outline-primary {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 10px 20px;
+      background: transparent;
+      color: var(--primary);
+      border: 1.5px solid var(--primary);
+      font-weight: 600;
+      font-size: 0.9rem;
+      border-radius: var(--radius-md);
+    }
+
+    .btn-outline-primary:hover {
+      background: var(--primary-light);
+      color: var(--primary-dark);
+    }
+
+    ::-webkit-scrollbar { width: 8px; height: 8px; }
+    ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 999px; }
+    [data-theme='dark'] ::-webkit-scrollbar-thumb { background: #334155; }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+
+  <!-- Main React App Script (Transpiled client-side via Babel) -->
+  <script type="text/babel">
+    const { useState, useEffect, useRef, createContext, useContext } = React;
+
+    // --- SEED DATA ---
+    const INITIAL_USER = {
+      name: "Alex Morgan",
+      email: "alex.morgan@healthsnap.ai",
+      avatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=250&q=80",
+      goals: ["Improve sleep", "Increase activity", "Improve food habits", "Maintain healthy routine"],
+      settings: { notifications: true, edgeAi: true, dataSharing: false, darkMode: false }
+    };
+
+    const INITIAL_WELLNESS_SCORE = {
+      score: 78,
+      max: 100,
+      status: "Good",
+      trend: "+4 pts vs last week"
+    };
+
+    const INITIAL_ACTIVITY = {
+      steps: 6420,
+      goal: 8000,
+      activeMinutes: 48,
+      activeGoal: 60,
+      distanceKm: 4.3,
+      caloriesBurned: 412,
+      percentAchieved: 80,
+      weeklyData: [
+        { day: "Mon", steps: 7800, activeMin: 55 },
+        { day: "Tue", steps: 6200, activeMin: 42 },
+        { day: "Wed", steps: 8400, activeMin: 62 },
+        { day: "Thu", steps: 5900, activeMin: 38 },
+        { day: "Fri", steps: 7100, activeMin: 50 },
+        { day: "Sat", steps: 9200, activeMin: 74 },
+        { day: "Sun", steps: 6420, activeMin: 48 }
+      ]
+    };
+
+    const INITIAL_SLEEP = {
+      lastNightDuration: "6h 30m",
+      hours: 6.5,
+      goalDuration: "7–8h",
+      quality: "Good",
+      efficiency: 84,
+      deepSleep: "1h 45m",
+      remSleep: "1h 20m",
+      lightSleep: "3h 25m",
+      weeklyData: [
+        { day: "Mon", duration: "7h 10m", hours: 7.17, quality: "Good" },
+        { day: "Tue", duration: "6h 40m", hours: 6.67, quality: "Fair" },
+        { day: "Wed", duration: "7h 30m", hours: 7.50, quality: "Optimal" },
+        { day: "Thu", duration: "6h 20m", hours: 6.33, quality: "Fair" },
+        { day: "Fri", duration: "6h 50m", hours: 6.83, quality: "Good" },
+        { day: "Sat", duration: "8h 00m", hours: 8.00, quality: "Optimal" },
+        { day: "Sun", duration: "6h 30m", hours: 6.50, quality: "Good" }
+      ],
+      awarenessMessage: "Your sleep duration has been slightly below your target on several days. Consider winding down 30 minutes earlier."
+    };
+
+    const FOOD_PRESETS = [
+      {
+        id: "preset-1",
+        name: "Mediterranean Grilled Chicken & Quinoa",
+        image: "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=700&q=80",
+        detectedItems: ["Rice", "Chicken", "Vegetables"],
+        calories: 620,
+        protein: 32,
+        carbs: 70,
+        fat: 18,
+        suggestion: "Your meal contains a good protein source. Consider adding more vegetables and maintaining balanced portions."
+      },
+      {
+        id: "preset-2",
+        name: "Avocado & Poached Egg Toast",
+        image: "https://images.unsplash.com/photo-1525351484163-7529414344d8?auto=format&fit=crop&w=700&q=80",
+        detectedItems: ["Sourdough Toast", "Avocado", "Poached Egg", "Seeds"],
+        calories: 480,
+        protein: 19,
+        carbs: 45,
+        fat: 24,
+        suggestion: "Rich in beneficial unsaturated fats from avocado and bioavailable egg protein. Sustained morning energy."
+      },
+      {
+        id: "preset-3",
+        name: "Atlantic Salmon & Roasted Asparagus",
+        image: "https://images.unsplash.com/photo-1467003909585-2f8a72700288?auto=format&fit=crop&w=700&q=80",
+        detectedItems: ["Salmon Fillet", "Asparagus", "Wild Rice"],
+        calories: 560,
+        protein: 38,
+        carbs: 38,
+        fat: 22,
+        suggestion: "Excellent Omega-3 fatty acid profile supporting cellular recovery and clean protein for muscle repair."
+      },
+      {
+        id: "preset-4",
+        name: "Berry & Chia Oatmeal Bowl",
+        image: "https://images.unsplash.com/photo-1517673132405-a56a62b18caf?auto=format&fit=crop&w=700&q=80",
+        detectedItems: ["Rolled Oats", "Blueberries", "Chia Seeds", "Almond Milk"],
+        calories: 420,
+        protein: 15,
+        carbs: 64,
+        fat: 11,
+        suggestion: "High soluble beta-glucan fiber supports smooth glucose release and sustained morning alertness."
+      }
+    ];
+
+    const SPEAK_PRESETS = [
+      {
+        id: "sp-1",
+        label: "Poor Sleep & Tiredness",
+        transcription: "I didn't sleep well last night and I'm feeling tired today.",
+        understanding: { sleep: "Poor", energy: "Low", mood: "Tired" },
+        guidance: "Your recent input suggests that you may benefit from maintaining a consistent sleep routine and taking enough rest."
+      },
+      {
+        id: "sp-2",
+        label: "Post-Workout Energy & Mild Tightness",
+        transcription: "Had a 30-minute jog this morning, feeling energetic overall but my legs feel slightly tight.",
+        understanding: { sleep: "Good", energy: "High", mood: "Energized" },
+        guidance: "Great cardiovascular movement! Light stretching and drinking plenty of fluids will help ease muscular tightness."
+      },
+      {
+        id: "sp-3",
+        label: "Work Stress & Skipped Lunch",
+        transcription: "Busy workday with back-to-back calls, skipped lunch, and noticing a dull headache.",
+        understanding: { sleep: "Normal", energy: "Low", mood: "Stressed" },
+        guidance: "Irregular meal timing and screen strain often coincide with tension headaches. Drink a glass of water and enjoy a balanced snack."
+      }
+    ];
+
+    const INITIAL_JOURNAL = [
+      {
+        id: "j-1",
+        timestamp: "Today, 2:30 PM",
+        feeling: "Tired",
+        feelingEmoji: "🥱",
+        symptoms: "Headache for 2 hours",
+        severity: "Moderate",
+        duration: "1–3 hours"
+      },
+      {
+        id: "j-2",
+        timestamp: "Yesterday, 8:45 PM",
+        feeling: "Good",
+        feelingEmoji: "🙂",
+        symptoms: "Relaxed evening walk",
+        severity: "Mild",
+        duration: "Less than 1 hour"
+      }
+    ];
+
+    const INITIAL_PATTERNS = [
+      {
+        id: "pat-1",
+        title: "Sleep + Activity",
+        signalIcons: ["😴", "🏃"],
+        correlation: "High (0.76)",
+        summary: "Your activity has been lower on days when your sleep duration is below your usual level.",
+        detail: "On nights with less than 6.5 hours of rest, daily step totals drop by 22% and afternoon active minutes decrease."
+      },
+      {
+        id: "pat-2",
+        title: "Food + Activity",
+        signalIcons: ["📸", "🏃"],
+        correlation: "Moderate (0.64)",
+        summary: "Your recent meals and activity levels show an opportunity to improve daily balance.",
+        detail: "Days with complex carbohydrate breakfasts coincided with 35% higher stamina during mid-day movement."
+      },
+      {
+        id: "pat-3",
+        title: "Wellness Journal",
+        signalIcons: ["📝", "🎤"],
+        correlation: "Notable (3 reports)",
+        summary: "You reported tiredness on multiple days this week.",
+        detail: "Mid-afternoon fatigue was most frequently reported following continuous screen time without hydration breaks."
+      }
+    ];
+
+    const INITIAL_GUIDANCE = [
+      {
+        id: "g-1",
+        title: "Improve Sleep",
+        category: "Rest & Recovery",
+        icon: "moon",
+        description: "Try maintaining a consistent sleep schedule.",
+        actionLabel: "Set Sleep Reminder",
+        completed: false
+      },
+      {
+        id: "g-2",
+        title: "Stay Active",
+        category: "Movement",
+        icon: "footprints",
+        description: "Consider adding a short walk to your day.",
+        actionLabel: "Log 15m Walk (+1,000 steps)",
+        completed: true
+      },
+      {
+        id: "g-3",
+        title: "Balanced Meals",
+        category: "Nutrition",
+        icon: "utensils",
+        description: "Try including vegetables and protein in your meals.",
+        actionLabel: "Snap Next Meal",
+        completed: false
+      },
+      {
+        id: "g-4",
+        title: "Stay Hydrated",
+        category: "Hydration",
+        icon: "droplet",
+        description: "Remember to maintain regular water intake.",
+        actionLabel: "Log +250ml Water",
+        completed: false
+      }
+    ];
+
+    const INITIAL_NOTIFS = [
+      {
+        id: "n-1",
+        type: "pattern",
+        title: "Wellness Pattern",
+        message: "Your sleep has been below your target for 3 days.",
+        time: "25 min ago",
+        read: false
+      },
+      {
+        id: "n-2",
+        type: "suggestion",
+        title: "Daily Suggestion",
+        message: "You're close to your activity goal today (80% achieved).",
+        time: "2h ago",
+        read: false
+      },
+      {
+        id: "n-3",
+        type: "food",
+        title: "Food Reminder",
+        message: "Log your meal to keep your food tracking updated.",
+        time: "4h ago",
+        read: true
+      }
+    ];
+
+    // --- CONTEXT & HOOK ---
+    const WellnessCtx = createContext();
+
+    function WellnessProvider({ children }) {
+      const [user, setUser] = useState(() => {
+        const s = localStorage.getItem('hs_user');
+        return s ? JSON.parse(s) : INITIAL_USER;
+      });
+      const [score, setScore] = useState(() => {
+        const s = localStorage.getItem('hs_score');
+        return s ? JSON.parse(s) : INITIAL_WELLNESS_SCORE;
+      });
+      const [activity, setActivity] = useState(() => {
+        const s = localStorage.getItem('hs_activity');
+        return s ? JSON.parse(s) : INITIAL_ACTIVITY;
+      });
+      const [sleep, setSleep] = useState(() => {
+        const s = localStorage.getItem('hs_sleep');
+        return s ? JSON.parse(s) : INITIAL_SLEEP;
+      });
+      const [foodLogs, setFoodLogs] = useState(() => {
+        const s = localStorage.getItem('hs_food');
+        return s ? JSON.parse(s) : FOOD_PRESETS.slice(0, 2);
+      });
+      const [journal, setJournal] = useState(() => {
+        const s = localStorage.getItem('hs_journal');
+        return s ? JSON.parse(s) : INITIAL_JOURNAL;
+      });
+      const [patterns, setPatterns] = useState(INITIAL_PATTERNS);
+      const [guidance, setGuidance] = useState(() => {
+        const s = localStorage.getItem('hs_guidance');
+        return s ? JSON.parse(s) : INITIAL_GUIDANCE;
+      });
+      const [notifs, setNotifs] = useState(INITIAL_NOTIFS);
+
+      const [activeView, setActiveView] = useState('landing');
+      const [theme, setTheme] = useState('light');
+      const [toast, setToast] = useState(null);
+
+      useEffect(() => {
+        document.documentElement.setAttribute('data-theme', theme);
+      }, [theme]);
+
+      useEffect(() => {
+        localStorage.setItem('hs_user', JSON.stringify(user));
+        localStorage.setItem('hs_score', JSON.stringify(score));
+        localStorage.setItem('hs_activity', JSON.stringify(activity));
+        localStorage.setItem('hs_sleep', JSON.stringify(sleep));
+        localStorage.setItem('hs_food', JSON.stringify(foodLogs));
+        localStorage.setItem('hs_journal', JSON.stringify(journal));
+        localStorage.setItem('hs_guidance', JSON.stringify(guidance));
+      }, [user, score, activity, sleep, foodLogs, journal, guidance]);
+
+      const showToast = (msg) => {
+        setToast(msg);
+        setTimeout(() => setToast(null), 3500);
+      };
+
+      const toggleTheme = () => setTheme(t => t === 'light' ? 'dark' : 'light');
+
+      const addFood = (meal) => {
+        setFoodLogs(prev => [meal, ...prev]);
+        setScore(s => ({ ...s, score: Math.min(100, s.score + 1) }));
+        showToast(`📸 ${meal.name} logged to food diary!`);
+      };
+
+      const addJournalEntry = (entry) => {
+        setJournal(prev => [{ id: `j-${Date.now()}`, timestamp: "Just now", ...entry }, ...prev]);
+        showToast("📝 Wellness entry added successfully.");
+      };
+
+      const addVoiceEntry = (transcript, under) => {
+        setJournal(prev => [
+          {
+            id: `v-${Date.now()}`,
+            timestamp: "Just now",
+            feeling: under.mood || "Tired",
+            feelingEmoji: "🥱",
+            symptoms: transcript,
+            severity: "Moderate",
+            duration: "Voice Logged"
+          },
+          ...prev
+        ]);
+        showToast("🎤 Voice log analyzed and recorded to wellness history!");
+      };
+
+      const logQuickSteps = (count) => {
+        setActivity(prev => {
+          const newSteps = prev.steps + count;
+          return {
+            ...prev,
+            steps: newSteps,
+            percentAchieved: Math.min(100, Math.round((newSteps / prev.goal) * 100)),
+            distanceKm: parseFloat((prev.distanceKm + count * 0.00075).toFixed(1)),
+            caloriesBurned: prev.caloriesBurned + Math.round(count * 0.04)
+          };
+        });
+        showToast(`🏃 Added +${count.toLocaleString()} steps!`);
+      };
+
+      const toggleGuidance = (id) => {
+        setGuidance(prev => prev.map(g => g.id === id ? { ...g, completed: !g.completed } : g));
+        showToast("✨ Guidance progress updated!");
+      };
+
+      const exportData = () => {
+        const data = {
+          exportDate: new Date().toISOString(),
+          user, score, activity, sleep, foodLogs, journal, patterns, guidance,
+          disclaimer: "HealthSnap is strictly for wellness awareness and habit tracking. Not medical diagnosis."
+        };
+        const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `HealthSnap_Wellness_Data_${new Date().toISOString().slice(0, 10)}.json`;
+        a.click();
+        URL.revokeObjectURL(url);
+        showToast("📥 Exported your wellness dataset as JSON.");
+      };
+
+      const resetData = () => {
+        setUser(INITIAL_USER);
+        setScore(INITIAL_WELLNESS_SCORE);
+        setActivity(INITIAL_ACTIVITY);
+        setSleep(INITIAL_SLEEP);
+        setFoodLogs(FOOD_PRESETS.slice(0, 2));
+        setJournal(INITIAL_JOURNAL);
+        setGuidance(INITIAL_GUIDANCE);
+        localStorage.clear();
+        showToast("🔄 Data reset to pristine demo values.");
+      };
+
+      return (
+        <WellnessCtx.Provider value={{
+          user, setUser, score, activity, sleep, foodLogs, journal, patterns, guidance, notifs, setNotifs,
+          activeView, setActiveView, theme, toggleTheme, toast, showToast,
+          addFood, addJournalEntry, addVoiceEntry, logQuickSteps, toggleGuidance, exportData, resetData
+        }}>
+          {children}
+        </WellnessCtx.Provider>
+      );
+    }
+
+    const useWellness = () => useContext(WellnessCtx);
+
+    // --- REUSABLE UI COMPONENTS ---
+    function DisclaimerBanner({ compact = false }) {
+      if (compact) {
+        return (
+          <div style={{
+            background: 'rgba(16, 185, 129, 0.08)',
+            border: '1px solid rgba(16, 185, 129, 0.25)',
+            borderRadius: 'var(--radius-md)',
+            padding: '8px 14px',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+            fontSize: '0.8rem',
+            color: 'var(--text-secondary)',
+            marginBottom: '20px'
+          }}>
+            <span style={{ color: 'var(--primary)', fontWeight: 800 }}>🛡️ Awareness Only:</span>
+            <span>HealthSnap is for health awareness & habit tracking only. It does not provide medical diagnosis or treatment. Consult a doctor for health concerns.</span>
+          </div>
+        );
+      }
+
+      return (
+        <aside style={{
+          background: 'linear-gradient(135deg, rgba(6, 182, 212, 0.08) 0%, rgba(16, 185, 129, 0.08) 100%)',
+          border: '1px solid rgba(16, 185, 129, 0.3)',
+          borderRadius: 'var(--radius-lg)',
+          padding: '16px 20px',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '16px',
+          marginBottom: '24px'
+        }}>
+          <div style={{
+            background: 'rgba(16, 185, 129, 0.2)',
+            width: '42px',
+            height: '42px',
+            borderRadius: '12px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            fontSize: '1.2rem',
+            flexShrink: 0
+          }}>
+            🛡️
+          </div>
+          <div>
+            <h4 style={{ fontSize: '0.92rem', color: 'var(--primary-dark)', marginBottom: '2px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <span>Wellness & Healthy Habit Tracking Only</span>
+              <span style={{ fontSize: '0.7rem', background: 'var(--primary)', color: '#fff', padding: '1px 8px', borderRadius: '999px' }}>NON-CLINICAL</span>
+            </h4>
+            <p style={{ fontSize: '0.82rem', margin: 0, color: 'var(--text-secondary)' }}>
+              HealthSnap does not diagnose diseases, prescribe medicines, or replace licensed physician care. Consult a healthcare provider if you experience symptoms.
+            </p>
+          </div>
+        </aside>
+      );
+    }
+
+    function CircularProgress({ score = 78, max = 100, size = 170 }) {
+      const strokeWidth = 12;
+      const radius = (size - strokeWidth * 2) / 2;
+      const circumference = 2 * Math.PI * radius;
+      const offset = circumference - (score / max) * circumference;
+
+      return (
+        <div style={{ position: 'relative', width: size, height: size, margin: '0 auto' }}>
+          <svg width={size} height={size} style={{ transform: 'rotate(-90deg)' }}>
+            <defs>
+              <linearGradient id="scoreGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stopColor="#10b981" />
+                <stop offset="100%" stopColor="#06b6d4" />
+              </linearGradient>
+            </defs>
+            <circle cx={size/2} cy={size/2} r={radius} stroke="var(--bg-subtle)" strokeWidth={strokeWidth} fill="none" />
+            <circle
+              cx={size/2} cy={size/2} r={radius}
+              stroke="url(#scoreGrad)" strokeWidth={strokeWidth}
+              strokeLinecap="round" fill="none"
+              strokeDasharray={circumference} strokeDashoffset={offset}
+              style={{ transition: 'stroke-dashoffset 1s ease' }}
+            />
+          </svg>
+          <div style={{
+            position: 'absolute', inset: 0,
+            display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center'
+          }}>
+            <div style={{ fontSize: '2.4rem', fontWeight: 900, lineHeight: 1, fontFamily: 'var(--font-heading)' }}>
+              {score} <span style={{ fontSize: '1rem', fontWeight: 500, color: 'var(--text-muted)' }}>/{max}</span>
+            </div>
+            <span style={{
+              fontSize: '0.72rem', fontWeight: 700, color: 'var(--primary)',
+              textTransform: 'uppercase', marginTop: '4px', background: 'rgba(16, 185, 129, 0.1)',
+              padding: '2px 8px', borderRadius: '999px'
+            }}>
+              Good
+            </span>
+          </div>
+        </div>
+      );
+    }
+
+    // --- NOTIFICATIONS DROPDOWN ---
+    function NotificationDropdown({ isOpen, onClose }) {
+      const { notifs, setNotifs, setActiveView } = useWellness();
+      if (!isOpen) return null;
+
+      const unreadCount = notifs.filter(n => !n.read).length;
+
+      const handleRead = (id, type) => {
+        setNotifs(prev => prev.map(n => n.id === id ? { ...n, read: true } : n));
+        if (type === 'pattern') setActiveView('insights');
+        else if (type === 'suggestion') setActiveView('activity');
+        else if (type === 'food') setActiveView('snap');
+        onClose();
+      };
+
+      return (
+        <div style={{
+          position: 'absolute', top: '100%', right: 0, marginTop: '10px',
+          width: '340px', maxWidth: '90vw', background: 'var(--bg-surface-elevated)',
+          border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-lg)',
+          boxShadow: 'var(--shadow-xl)', zIndex: 100, overflow: 'hidden',
+          animation: 'fadeInUp 0.2s ease'
+        }}>
+          <div style={{
+            padding: '14px 18px', borderBottom: '1px solid var(--divider)',
+            display: 'flex', justifyContent: 'space-between', alignItems: 'center'
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <h4 style={{ fontSize: '0.95rem', margin: 0 }}>Notifications</h4>
+              {unreadCount > 0 && (
+                <span style={{ fontSize: '0.7rem', fontWeight: 700, background: 'var(--primary)', color: '#fff', padding: '2px 8px', borderRadius: '999px' }}>
+                  {unreadCount} new
+                </span>
+              )}
+            </div>
+            <button
+              onClick={() => { setNotifs(prev => prev.map(n => ({ ...n, read: true }))); }}
+              style={{ fontSize: '0.75rem', color: 'var(--primary)', fontWeight: 600 }}
+            >
+              Mark all read
+            </button>
+          </div>
+
+          <div style={{ maxHeight: '320px', overflowY: 'auto' }}>
+            {notifs.map(n => (
+              <div
+                key={n.id}
+                onClick={() => handleRead(n.id, n.type)}
+                style={{
+                  padding: '12px 16px', borderBottom: '1px solid var(--divider)',
+                  background: n.read ? 'transparent' : 'rgba(16, 185, 129, 0.05)',
+                  cursor: 'pointer', display: 'flex', gap: '10px', alignItems: 'flex-start'
+                }}
+              >
+                <span style={{ fontSize: '1.2rem', marginTop: '2px' }}>
+                  {n.type === 'pattern' ? '🔔' : n.type === 'suggestion' ? '💡' : '📸'}
+                </span>
+                <div style={{ flex: 1 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <strong style={{ fontSize: '0.85rem' }}>{n.title}</strong>
+                    {!n.read && <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: 'var(--primary)' }} />}
+                  </div>
+                  <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', margin: '2px 0' }}>{n.message}</p>
+                  <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>{n.time}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      );
+    }
+
+    // --- HEADER ---
+    function Header() {
+      const { user, notifs, theme, toggleTheme, setActiveView } = useWellness();
+      const [notifOpen, setNotifOpen] = useState(false);
+      const unreadCount = notifs.filter(n => !n.read).length;
+
+      return (
+        <header style={{
+          height: '70px', background: 'var(--bg-glass)', backdropFilter: 'blur(16px)',
+          borderBottom: '1px solid var(--border-subtle)', position: 'sticky', top: 0, zIndex: 40,
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 24px'
+        }}>
+          <button onClick={() => setActiveView('dashboard')} style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <div style={{
+              width: '40px', height: '40px', borderRadius: '12px',
+              background: 'linear-gradient(135deg, var(--primary) 0%, #06b6d4 100%)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: '1.2rem',
+              boxShadow: '0 4px 12px rgba(16, 185, 129, 0.35)'
+            }}>
+              ❤️
+            </div>
+            <div style={{ textAlign: 'left' }}>
+              <div style={{ fontFamily: 'var(--font-heading)', fontSize: '1.25rem', fontWeight: 800, color: 'var(--text-main)', lineHeight: 1.1 }}>
+                Health<span style={{ color: 'var(--primary)' }}>Snap</span>
+              </div>
+              <div style={{ fontSize: '0.68rem', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase' }}>
+                AI Wellness Companion
+              </div>
+            </div>
+          </button>
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <button onClick={() => setActiveView('landing')} className="btn-secondary" style={{ padding: '7px 14px', fontSize: '0.82rem' }}>
+              🏠 <span>Landing</span>
+            </button>
+
+            <button onClick={toggleTheme} style={{
+              width: '38px', height: '38px', borderRadius: '50%', background: 'var(--bg-subtle)',
+              border: '1px solid var(--border-subtle)', display: 'flex', alignItems: 'center', justifyContent: 'center'
+            }}>
+              {theme === 'light' ? '🌙' : '☀️'}
+            </button>
+
+            <div style={{ position: 'relative' }}>
+              <button onClick={() => setNotifOpen(!notifOpen)} style={{
+                width: '38px', height: '38px', borderRadius: '50%', background: 'var(--bg-subtle)',
+                border: '1px solid var(--border-subtle)', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                position: 'relative'
+              }}>
+                🔔
+                {unreadCount > 0 && (
+                  <span style={{
+                    position: 'absolute', top: '-2px', right: '-2px', background: '#ef4444',
+                    color: '#fff', fontSize: '0.65rem', fontWeight: 800, minWidth: '16px', height: '16px',
+                    borderRadius: '999px', display: 'flex', alignItems: 'center', justifyContent: 'center'
+                  }}>
+                    {unreadCount}
+                  </span>
+                )}
+              </button>
+              <NotificationDropdown isOpen={notifOpen} onClose={() => setNotifOpen(false)} />
+            </div>
+
+            <button onClick={() => setActiveView('profile')} style={{
+              display: 'flex', alignItems: 'center', gap: '8px', padding: '4px 10px 4px 4px',
+              background: 'var(--bg-surface)', border: '1px solid var(--border-subtle)', borderRadius: '999px'
+            }}>
+              <img src={user.avatar} alt={user.name} style={{ width: '30px', height: '30px', borderRadius: '50%', objectFit: 'cover' }} />
+              <span style={{ fontSize: '0.82rem', fontWeight: 600 }}>{user.name.split(' ')[0]}</span>
+            </button>
+          </div>
+        </header>
+      );
+    }
+
+    // --- SIDEBAR ---
+    function Sidebar() {
+      const { activeView, setActiveView } = useWellness();
+
+      const navItems = [
+        { id: 'dashboard', label: 'Dashboard', icon: '🏠' },
+        { id: 'snap', label: 'Snap Food', icon: '📸', badge: 'AI' },
+        { id: 'speak', label: 'Speak', icon: '🎤', badge: 'Voice' },
+        { id: 'journal', label: 'Log Wellness', icon: '📝' },
+        { id: 'activity', label: 'Activity', icon: '🏃' },
+        { id: 'sleep', label: 'Sleep', icon: '😴' },
+        { id: 'insights', label: 'AI Insights', icon: '🧠', badge: 'Core' },
+        { id: 'guidance', label: 'Guidance', icon: '💡' },
+        { id: 'trends', label: 'Track & Trends', icon: '📊' },
+        { id: 'profile', label: 'Profile & Privacy', icon: '👤' }
+      ];
+
+      return (
+        <aside style={{
+          width: '250px', background: 'var(--bg-surface)', borderRight: '1px solid var(--border-subtle)',
+          padding: '20px 12px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between',
+          flexShrink: 0, minHeight: 'calc(100vh - 70px)'
+        }}>
+          <nav style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+            <div style={{ fontSize: '0.7rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', padding: '6px 12px' }}>
+              Navigation
+            </div>
+            {navItems.map(item => {
+              const isActive = activeView === item.id;
+              return (
+                <button
+                  key={item.id}
+                  onClick={() => setActiveView(item.id)}
+                  style={{
+                    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                    padding: '10px 14px', borderRadius: 'var(--radius-md)', fontSize: '0.88rem',
+                    fontWeight: isActive ? 700 : 500,
+                    color: isActive ? 'var(--primary)' : 'var(--text-secondary)',
+                    background: isActive ? 'rgba(16, 185, 129, 0.12)' : 'transparent',
+                    border: isActive ? '1px solid rgba(16, 185, 129, 0.3)' : '1px solid transparent'
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <span style={{ fontSize: '1.1rem' }}>{item.icon}</span>
+                    <span>{item.label}</span>
+                  </div>
+                  {item.badge && (
+                    <span style={{
+                      fontSize: '0.65rem', fontWeight: 800, padding: '2px 6px', borderRadius: '999px',
+                      background: isActive ? 'var(--primary)' : 'var(--bg-subtle)',
+                      color: isActive ? '#fff' : 'var(--text-muted)'
+                    }}>
+                      {item.badge}
+                    </span>
+                  )}
+                </button>
+              );
+            })}
+          </nav>
+
+          <div style={{
+            padding: '14px', background: 'rgba(16, 185, 129, 0.08)', border: '1px solid rgba(16, 185, 129, 0.2)',
+            borderRadius: 'var(--radius-md)', textAlign: 'center'
+          }}>
+            <div style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--primary)' }}>HEALTH HABIT PROTOTYPE</div>
+            <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginTop: '4px' }}>For health awareness only. Non-diagnostic.</div>
+          </div>
+        </aside>
+      );
+    }
+
+    // --- MOBILE NAV ---
+    function MobileNav() {
+      const { activeView, setActiveView } = useWellness();
+
+      const items = [
+        { id: 'dashboard', label: 'Home', icon: '🏠' },
+        { id: 'snap', label: 'Snap', icon: '📸' },
+        { id: 'speak', label: 'Speak', icon: '🎤' },
+        { id: 'trends', label: 'Track', icon: '📊' },
+        { id: 'profile', label: 'Profile', icon: '👤' }
+      ];
+
+      return (
+        <nav style={{
+          position: 'fixed', bottom: 0, left: 0, right: 0, height: '62px',
+          background: 'var(--bg-glass)', backdropFilter: 'blur(16px)', borderTop: '1px solid var(--border-subtle)',
+          display: 'flex', alignItems: 'center', justifyContent: 'space-around', zIndex: 50
+        }} className="mobile-only-nav">
+          {items.map(item => {
+            const active = activeView === item.id;
+            return (
+              <button
+                key={item.id}
+                onClick={() => setActiveView(item.id)}
+                style={{
+                  display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px',
+                  color: active ? 'var(--primary)' : 'var(--text-muted)', fontSize: '0.72rem', fontWeight: active ? 700 : 500
+                }}
+              >
+                <span style={{ fontSize: '1.2rem' }}>{item.icon}</span>
+                <span>{item.label}</span>
+              </button>
+            );
+          })}
+        </nav>
+      );
+    }
+
+    // --- 1. LANDING PAGE ---
+    function LandingPage() {
+      const { setActiveView } = useWellness();
+
+      return (
+        <div>
+          {/* Landing Header */}
+          <header style={{
+            height: '76px', padding: '0 32px', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+            borderBottom: '1px solid var(--border-subtle)', background: 'var(--bg-glass)', backdropFilter: 'blur(16px)'
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <div style={{
+                width: '42px', height: '42px', borderRadius: '12px',
+                background: 'linear-gradient(135deg, var(--primary) 0%, #06b6d4 100%)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: '1.3rem'
+              }}>
+                ❤️
+              </div>
+              <div>
+                <h1 style={{ fontSize: '1.4rem', fontWeight: 800, margin: 0, lineHeight: 1.1 }}>
+                  Health<span style={{ color: 'var(--primary)' }}>Snap</span>
+                </h1>
+                <span style={{ fontSize: '0.68rem', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase' }}>
+                  AI Wellness Companion
+                </span>
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+              <button onClick={() => setActiveView('dashboard')} className="btn-primary" style={{ padding: '10px 22px', fontSize: '0.92rem' }}>
+                ⚡ Launch Prototype
+              </button>
+            </div>
+          </header>
+
+          {/* Hero Section */}
+          <section style={{ maxWidth: '1200px', margin: '0 auto', padding: '70px 24px', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))', gap: '48px', alignItems: 'center' }}>
+            <div>
+              <div style={{
+                display: 'inline-flex', alignItems: 'center', gap: '8px', background: 'rgba(16, 185, 129, 0.12)',
+                border: '1px solid rgba(16, 185, 129, 0.25)', padding: '6px 14px', borderRadius: '999px',
+                fontSize: '0.82rem', fontWeight: 700, color: 'var(--primary)', marginBottom: '20px'
+              }}>
+                ✨ AI Wellness Companion Prototype
+              </div>
+
+              <h2 style={{ fontSize: '3.2rem', fontWeight: 900, lineHeight: 1.1, marginBottom: '14px' }}>
+                Health<span className="gradient-text">Snap</span>
+                <span style={{ display: 'block', fontSize: '2rem', fontWeight: 600, color: 'var(--text-secondary)', marginTop: '8px' }}>
+                  Your AI-powered wellness companion
+                </span>
+              </h2>
+
+              <p style={{ fontSize: '1.15rem', color: 'var(--text-secondary)', lineHeight: 1.6, marginBottom: '32px', maxWidth: '520px' }}>
+                "Understand your everyday wellness patterns, build healthier habits, and stay aware of changes over time."
+              </p>
+
+              <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap', marginBottom: '28px' }}>
+                <button onClick={() => setActiveView('dashboard')} className="btn-primary" style={{ padding: '14px 30px', fontSize: '1.05rem' }}>
+                  Get Started ➔
+                </button>
+                <button onClick={() => {
+                  const el = document.getElementById('features');
+                  if (el) el.scrollIntoView({ behavior: 'smooth' });
+                }} className="btn-secondary" style={{ padding: '14px 26px', fontSize: '1.05rem' }}>
+                  Explore Features
+                </button>
+              </div>
+
+              <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>
+                🛡️ Health awareness and healthy habit improvement only. Not for medical diagnosis or treatment.
+              </div>
+            </div>
+
+            {/* Visual Smartphone / Dashboard Card */}
+            <div style={{
+              background: 'var(--bg-surface)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-xl)',
+              padding: '28px', boxShadow: 'var(--shadow-xl)', position: 'relative'
+            }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', borderBottom: '1px solid var(--divider)', paddingBottom: '14px' }}>
+                <div>
+                  <span style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--primary)', textTransform: 'uppercase' }}>Live Companion Preview</span>
+                  <h3 style={{ fontSize: '1.1rem', margin: 0 }}>Today's Wellness Status</h3>
+                </div>
+                <span className="badge-tag badge-emerald">Optimal 78/100</span>
+              </div>
+
+              <div style={{ display: 'flex', alignItems: 'center', gap: '20px', background: 'rgba(16, 185, 129, 0.08)', padding: '18px', borderRadius: 'var(--radius-lg)', marginBottom: '18px' }}>
+                <div style={{ width: '68px', height: '68px', borderRadius: '50%', border: '5px solid var(--primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.4rem', fontWeight: 900, color: 'var(--primary)', background: 'var(--bg-surface)' }}>
+                  78
+                </div>
+                <div>
+                  <strong style={{ fontSize: '0.98rem' }}>Consistent Habits & Recovery</strong>
+                  <p style={{ fontSize: '0.82rem', margin: '2px 0 0' }}>Sleep 6h 30m, 6,420 steps logged. +4 pts vs last week.</p>
+                </div>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                <button onClick={() => setActiveView('snap')} style={{ padding: '12px', background: 'var(--bg-subtle)', borderRadius: 'var(--radius-md)', textAlign: 'left' }}>
+                  <span style={{ fontSize: '1.3rem' }}>📸</span>
+                  <strong style={{ fontSize: '0.85rem', display: 'block', marginTop: '4px' }}>Snap Food</strong>
+                  <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>Meal Vision Analysis</span>
+                </button>
+                <button onClick={() => setActiveView('speak')} style={{ padding: '12px', background: 'var(--bg-subtle)', borderRadius: 'var(--radius-md)', textAlign: 'left' }}>
+                  <span style={{ fontSize: '1.3rem' }}>🎤</span>
+                  <strong style={{ fontSize: '0.85rem', display: 'block', marginTop: '4px' }}>Speak</strong>
+                  <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>Voice AI Wellness Cues</span>
+                </button>
+              </div>
+            </div>
+          </section>
+
+          {/* Workflow Section: Snap ➔ Speak ➔ AI Analyze ➔ Track ➔ Guidance */}
+          <section style={{ padding: '60px 24px', background: 'var(--bg-surface)', borderTop: '1px solid var(--border-subtle)', borderBottom: '1px solid var(--border-subtle)' }}>
+            <div style={{ maxWidth: '1200px', margin: '0 auto', textAlign: 'center' }}>
+              <span style={{ fontSize: '0.78rem', fontWeight: 800, color: 'var(--primary)', textTransform: 'uppercase' }}>Workflow Architecture</span>
+              <h2 style={{ fontSize: '2.2rem', fontWeight: 800, margin: '6px 0 36px' }}>
+                Snap ➔ Speak ➔ AI Analyze ➔ Track ➔ Personalized Guidance
+              </h2>
+
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px' }}>
+                {[
+                  { step: "01", title: "Snap", icon: "📸", desc: "Use your camera to capture food and wellness information." },
+                  { step: "02", title: "Speak", icon: "🎤", desc: "Describe how you feel or log your daily wellness using your voice." },
+                  { step: "03", title: "AI Analyze", icon: "🧠", desc: "AI combines different wellness signals to identify patterns." },
+                  { step: "04", title: "Track", icon: "📊", desc: "Monitor your wellness trends over time." },
+                  { step: "05", title: "Personalized Guidance", icon: "💡", desc: "Receive simple recommendations based on your personal patterns." }
+                ].map(s => (
+                  <div key={s.step} style={{ background: 'var(--bg-app)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-lg)', padding: '22px', textAlign: 'left' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                      <span style={{ fontSize: '1.6rem' }}>{s.icon}</span>
+                      <span style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--text-muted)' }}>{s.step}</span>
+                    </div>
+                    <h3 style={{ fontSize: '1.1rem', marginBottom: '6px' }}>{s.title}</h3>
+                    <p style={{ fontSize: '0.84rem', margin: 0, color: 'var(--text-secondary)' }}>{s.desc}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </section>
+
+          {/* Feature Cards */}
+          <section id="features" style={{ maxWidth: '1200px', margin: '0 auto', padding: '70px 24px' }}>
+            <div style={{ textAlign: 'center', marginBottom: '48px' }}>
+              <h2 style={{ fontSize: '2.4rem', fontWeight: 800 }}>Explore HealthSnap Capabilities</h2>
+              <p style={{ fontSize: '1.05rem', color: 'var(--text-secondary)' }}>Everything you need for comprehensive personal health awareness.</p>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '20px' }}>
+              {[
+                { title: "Snap Food Nutrition", icon: "📸", view: "snap", desc: "Take a photo of your meal to get approximate calories, protein, carbs, and fat breakdown for general nutrition awareness." },
+                { title: "Speak to HealthSnap", icon: "🎤", view: "speak", desc: "Tell us how you're feeling using natural voice inputs. AI extracts energy, mood, and sleep markers." },
+                { title: "AI Pattern Synthesis", icon: "🧠", view: "insights", desc: "HealthSnap combines food, voice, activity, sleep, and journal inputs to identify actionable lifestyle patterns." },
+                { title: "Activity Tracking", icon: "🏃", view: "activity", desc: "6,420 steps today, 48 active minutes, 4.3 km. Goal progress rings and weekly bar charts." },
+                { title: "Sleep Tracking", icon: "😴", view: "sleep", desc: "Last night 6h 30m, weekly sleep trends, sleep stage breakdown (Deep, REM, Light) and consistency alerts." },
+                { title: "Personalized Guidance", icon: "💡", view: "guidance", desc: "Receive simple, non-medical habit recommendations: improve sleep, stay active, balanced meals, stay hydrated." }
+              ].map(f => (
+                <div
+                  key={f.title}
+                  onClick={() => setActiveView(f.view)}
+                  style={{
+                    background: 'var(--bg-surface)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-lg)',
+                    padding: '26px', cursor: 'pointer', display: 'flex', flexDirection: 'column', justifyContent: 'space-between'
+                  }}
+                >
+                  <div>
+                    <span style={{ fontSize: '2rem' }}>{f.icon}</span>
+                    <h3 style={{ fontSize: '1.2rem', margin: '12px 0 8px' }}>{f.title}</h3>
+                    <p style={{ fontSize: '0.88rem', color: 'var(--text-secondary)', lineHeight: 1.5 }}>{f.desc}</p>
+                  </div>
+                  <div style={{ color: 'var(--primary)', fontWeight: 700, fontSize: '0.85rem', marginTop: '16px' }}>
+                    Open {f.title} ➔
+                  </div>
+                </div>
+              ))}
+            </div>
+          </section>
+
+          {/* Ethics Footer */}
+          <footer style={{ padding: '40px 24px', textAlign: 'center', background: 'var(--bg-surface)', borderTop: '1px solid var(--divider)' }}>
+            <div style={{ fontSize: '0.9rem', fontWeight: 700 }}>HealthSnap – AI Wellness Companion Prototype</div>
+            <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', margin: '6px 0 0' }}>
+              Built for health awareness & habit tracking only. Not a medical diagnosis or treatment application.
+            </p>
+          </footer>
+        </div>
+      );
+    }
+
+    // --- 2. MAIN DASHBOARD ---
+    function DashboardView() {
+      const { user, score, activity, sleep, foodLogs, setActiveView } = useWellness();
+
+      return (
+        <div style={{ maxWidth: '1100px', margin: '0 auto' }}>
+          <DisclaimerBanner compact={true} />
+
+          {/* Greeting */}
+          <div style={{ marginBottom: '28px' }}>
+            <h1 style={{ fontSize: '2rem', fontWeight: 800, margin: 0 }}>Good morning! 👋</h1>
+            <p style={{ fontSize: '1.05rem', color: 'var(--text-secondary)', margin: '4px 0 0' }}>
+              "Let's check your wellness today."
+            </p>
+          </div>
+
+          {/* Score & Cards Grid */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '24px', marginBottom: '32px' }}>
+            {/* Today's Wellness Score */}
+            <div style={{
+              background: 'var(--bg-surface)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-xl)',
+              padding: '28px', textAlign: 'center', boxShadow: 'var(--shadow-md)'
+            }}>
+              <h3 style={{ fontSize: '1.25rem', marginBottom: '20px' }}>Today's Wellness Score</h3>
+              <CircularProgress score={score.score} max={score.max} size={180} />
+              <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginTop: '18px', marginBottom: '14px' }}>
+                Example: <strong>{score.score} / {score.max}</strong> • Based on activity, sleep, food, and daily wellness checks.
+              </p>
+              <button onClick={() => setActiveView('insights')} className="btn-outline-primary" style={{ width: '100%', padding: '10px' }}>
+                🧠 View AI Insights Breakdown
+              </button>
+            </div>
+
+            {/* 4 Cards Grid */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
+              {/* Activity */}
+              <div onClick={() => setActiveView('activity')} style={{ background: 'var(--bg-surface)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-lg)', padding: '18px', cursor: 'pointer' }}>
+                <span style={{ fontSize: '1.4rem' }}>🏃</span>
+                <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', fontWeight: 600, marginTop: '6px' }}>Activity</div>
+                <h4 style={{ fontSize: '1.25rem', fontWeight: 800, margin: '2px 0' }}>{activity.steps.toLocaleString()} steps</h4>
+                <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Goal: {activity.goal.toLocaleString()}</div>
+              </div>
+
+              {/* Sleep */}
+              <div onClick={() => setActiveView('sleep')} style={{ background: 'var(--bg-surface)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-lg)', padding: '18px', cursor: 'pointer' }}>
+                <span style={{ fontSize: '1.4rem' }}>😴</span>
+                <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', fontWeight: 600, marginTop: '6px' }}>Sleep</div>
+                <h4 style={{ fontSize: '1.25rem', fontWeight: 800, margin: '2px 0' }}>{sleep.lastNightDuration}</h4>
+                <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Target: {sleep.goalDuration}</div>
+              </div>
+
+              {/* Food */}
+              <div onClick={() => setActiveView('snap')} style={{ background: 'var(--bg-surface)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-lg)', padding: '18px', cursor: 'pointer' }}>
+                <span style={{ fontSize: '1.4rem' }}>🥗</span>
+                <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', fontWeight: 600, marginTop: '6px' }}>Food</div>
+                <h4 style={{ fontSize: '1.25rem', fontWeight: 800, margin: '2px 0' }}>Balanced</h4>
+                <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>5 meals logged</div>
+              </div>
+
+              {/* Wellness */}
+              <div onClick={() => setActiveView('journal')} style={{ background: 'var(--bg-surface)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-lg)', padding: '18px', cursor: 'pointer' }}>
+                <span style={{ fontSize: '1.4rem' }}>😊</span>
+                <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', fontWeight: 600, marginTop: '6px' }}>Wellness</div>
+                <h4 style={{ fontSize: '1.25rem', fontWeight: 800, margin: '2px 0' }}>Good</h4>
+                <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Based on recent inputs</div>
+              </div>
+            </div>
+          </div>
+
+          {/* Quick Actions (Section 5) */}
+          <div style={{ marginBottom: '32px' }}>
+            <h3 style={{ fontSize: '1.3rem', fontWeight: 800, marginBottom: '16px' }}>Quick Actions</h3>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '16px' }}>
+              {[
+                { title: "📸 Snap Food", subtitle: "Analyze your meal", view: "snap", color: "#10b981" },
+                { title: "🎤 Speak", subtitle: "Tell HealthSnap how you feel", view: "speak", color: "#06b6d4" },
+                { title: "📝 Log Wellness", subtitle: "Record symptoms or habits", view: "journal", color: "#8b5cf6" },
+                { title: "📊 View Progress", subtitle: "See your wellness trends", view: "trends", color: "#3b82f6" }
+              ].map(qa => (
+                <div
+                  key={qa.title}
+                  onClick={() => setActiveView(qa.view)}
+                  style={{
+                    background: 'var(--bg-surface)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-lg)',
+                    padding: '20px', cursor: 'pointer', transition: 'transform 0.2s'
+                  }}
+                  onMouseEnter={e => e.currentTarget.style.transform = 'translateY(-3px)'}
+                  onMouseLeave={e => e.currentTarget.style.transform = 'translateY(0)'}
+                >
+                  <h4 style={{ fontSize: '1.15rem', fontWeight: 800, margin: 0 }}>{qa.title}</h4>
+                  <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', margin: '6px 0 14px' }}>"{qa.subtitle}"</div>
+                  <span style={{ color: qa.color, fontSize: '0.8rem', fontWeight: 700 }}>Open section ➔</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    // --- 3. SNAP FOOD PAGE ---
+    function SnapFoodView() {
+      const { addFood, setActiveView } = useWellness();
+      const [selectedPreset, setSelectedPreset] = useState(FOOD_PRESETS[0]);
+      const [customImg, setCustomImg] = useState(null);
+      const [isAnalyzing, setIsAnalyzing] = useState(false);
+      const [saved, setSaved] = useState(false);
+
+      const triggerAnalysis = (preset, custom = null) => {
+        setIsAnalyzing(true);
+        setSaved(false);
+        if (custom) {
+          setCustomImg(custom);
+          setSelectedPreset({
+            id: `custom-${Date.now()}`,
+            name: "Rice, Chicken & Vegetables Plate",
+            image: custom,
+            detectedItems: ["Rice", "Chicken", "Vegetables"],
+            calories: 620,
+            protein: 32,
+            carbs: 70,
+            fat: 18,
+            suggestion: "Your meal contains a good protein source. Consider adding more vegetables and maintaining balanced portions."
+          });
+        } else {
+          setCustomImg(null);
+          setSelectedPreset(preset);
+        }
+
+        setTimeout(() => setIsAnalyzing(false), 1800);
+      };
+
+      const handleUpload = (e) => {
+        const file = e.target.files?.[0];
+        if (file) {
+          const r = new FileReader();
+          r.onload = (ev) => triggerAnalysis(null, ev.target.result);
+          r.readAsDataURL(file);
+        }
+      };
+
+      const handleSave = () => {
+        addFood(selectedPreset);
+        setSaved(true);
+      };
+
+      const activeImage = customImg || selectedPreset.image;
+
+      return (
+        <div style={{ maxWidth: '960px', margin: '0 auto' }}>
+          <DisclaimerBanner compact={true} />
+
+          <div style={{ marginBottom: '24px' }}>
+            <h1 style={{ fontSize: '2.2rem', fontWeight: 800, margin: 0 }}>Snap Your Food</h1>
+            <p style={{ fontSize: '1rem', color: 'var(--text-secondary)', margin: '4px 0 0' }}>
+              "Take a photo of your meal to get general nutrition awareness."
+            </p>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))', gap: '24px' }}>
+            {/* Viewfinder Area */}
+            <div style={{ background: 'var(--bg-surface)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-xl)', padding: '24px' }}>
+              <div style={{
+                position: 'relative', width: '100%', height: '300px', borderRadius: 'var(--radius-lg)',
+                overflow: 'hidden', background: '#090d16', display: 'flex', alignItems: 'center', justifyContent: 'center'
+              }}>
+                <img
+                  src={activeImage}
+                  alt="Meal"
+                  style={{ width: '100%', height: '100%', objectFit: 'cover', filter: isAnalyzing ? 'brightness(0.5)' : 'none' }}
+                />
+
+                {/* Laser scan */}
+                {isAnalyzing && (
+                  <div style={{
+                    position: 'absolute', left: 0, right: 0, height: '3px',
+                    background: 'linear-gradient(90deg, transparent, #10b981, #06b6d4, transparent)',
+                    boxShadow: '0 0 16px #10b981', animation: 'laserScan 1.5s infinite ease-in-out'
+                  }} />
+                )}
+
+                {isAnalyzing && (
+                  <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: '#fff' }}>
+                    <div style={{ width: '40px', height: '40px', borderRadius: '50%', border: '3px solid #10b981', borderTopColor: 'transparent', animation: 'spin 1s linear infinite', marginBottom: '12px' }} />
+                    <strong style={{ fontSize: '1.1rem' }}>AI Analyzing...</strong>
+                    <span style={{ fontSize: '0.8rem', color: '#a7f3d0' }}>Segmenting food items & estimating macros</span>
+                  </div>
+                )}
+              </div>
+
+              {/* Buttons: Take Photo & Upload Image */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginTop: '16px' }}>
+                <button
+                  onClick={() => triggerAnalysis(selectedPreset)}
+                  disabled={isAnalyzing}
+                  className="btn-primary"
+                  style={{ padding: '12px', fontSize: '0.9rem' }}
+                >
+                  📸 Take Photo
+                </button>
+
+                <label className="btn-secondary" style={{ padding: '12px', fontSize: '0.9rem', cursor: 'pointer', textAlign: 'center' }}>
+                  📁 Upload Image
+                  <input type="file" accept="image/*" onChange={handleUpload} style={{ display: 'none' }} />
+                </label>
+              </div>
+
+              {/* Sample Presets */}
+              <div style={{ marginTop: '20px' }}>
+                <span style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-muted)' }}>SAMPLE MEAL PRESETS:</span>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginTop: '8px' }}>
+                  {FOOD_PRESETS.map(p => (
+                    <button
+                      key={p.id}
+                      onClick={() => triggerAnalysis(p)}
+                      style={{
+                        padding: '8px 10px', background: selectedPreset.id === p.id ? 'rgba(16, 185, 129, 0.12)' : 'var(--bg-subtle)',
+                        border: selectedPreset.id === p.id ? '1px solid var(--primary)' : '1px solid var(--border-subtle)',
+                        borderRadius: 'var(--radius-md)', fontSize: '0.78rem', textAlign: 'left', fontWeight: 600
+                      }}
+                    >
+                      {p.name.split('&')[0]}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* Results: AI Food Analysis */}
+            <div style={{ background: 'var(--bg-surface)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-xl)', padding: '26px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+                <h3 style={{ fontSize: '1.3rem', fontWeight: 800, margin: 0 }}>AI Food Analysis</h3>
+                <span className="badge-tag badge-emerald">Estimated Awareness</span>
+              </div>
+
+              {/* Detected */}
+              <div style={{ marginBottom: '16px' }}>
+                <div style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--text-muted)' }}>DETECTED:</div>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginTop: '6px' }}>
+                  {selectedPreset.detectedItems.map(item => (
+                    <span key={item} style={{ background: 'var(--bg-subtle)', border: '1px solid var(--border-subtle)', padding: '4px 12px', borderRadius: '999px', fontSize: '0.85rem', fontWeight: 600 }}>
+                      ✓ {item}
+                    </span>
+                  ))}
+                </div>
+              </div>
+
+              {/* Approximate Nutrition */}
+              <div style={{ background: 'var(--bg-subtle)', padding: '16px', borderRadius: 'var(--radius-md)', marginBottom: '18px' }}>
+                <div style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--text-muted)', marginBottom: '10px' }}>
+                  APPROXIMATE NUTRITION INFORMATION:
+                </div>
+                <div style={{ fontSize: '1.2rem', fontWeight: 800, marginBottom: '12px' }}>
+                  Calories: <span style={{ color: 'var(--primary)' }}>{selectedPreset.calories} kcal</span>
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px' }}>
+                  <div style={{ background: 'var(--bg-surface)', padding: '10px', borderRadius: 'var(--radius-md)', textAlign: 'center' }}>
+                    <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)', display: 'block' }}>Protein</span>
+                    <strong style={{ fontSize: '1.1rem', color: 'var(--primary)' }}>{selectedPreset.protein} g</strong>
+                  </div>
+                  <div style={{ background: 'var(--bg-surface)', padding: '10px', borderRadius: 'var(--radius-md)', textAlign: 'center' }}>
+                    <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)', display: 'block' }}>Carbohydrates</span>
+                    <strong style={{ fontSize: '1.1rem', color: 'var(--secondary)' }}>{selectedPreset.carbs} g</strong>
+                  </div>
+                  <div style={{ background: 'var(--bg-surface)', padding: '10px', borderRadius: 'var(--radius-md)', textAlign: 'center' }}>
+                    <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)', display: 'block' }}>Fat</span>
+                    <strong style={{ fontSize: '1.1rem', color: '#f59e0b' }}>{selectedPreset.fat} g</strong>
+                  </div>
+                </div>
+              </div>
+
+              {/* Wellness Suggestion */}
+              <div style={{ background: 'rgba(16, 185, 129, 0.08)', border: '1px solid rgba(16, 185, 129, 0.25)', borderRadius: 'var(--radius-md)', padding: '16px', marginBottom: '16px' }}>
+                <h4 style={{ fontSize: '0.9rem', color: 'var(--primary-dark)', margin: '0 0 4px' }}>Wellness Suggestion</h4>
+                <p style={{ fontSize: '0.85rem', margin: 0, lineHeight: 1.5, color: 'var(--text-secondary)' }}>
+                  "{selectedPreset.suggestion}"
+                </p>
+              </div>
+
+              {/* Disclaimer */}
+              <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '18px' }}>
+                ℹ️ <em>"Nutrition values are estimates for awareness purposes only."</em>
+              </div>
+
+              <div style={{ display: 'flex', gap: '10px' }}>
+                <button onClick={handleSave} disabled={saved} className="btn-primary" style={{ flex: 1, padding: '12px' }}>
+                  {saved ? '✓ Saved to Food Diary' : '💾 Save to Food Diary'}
+                </button>
+                <button onClick={() => setActiveView('dashboard')} className="btn-secondary" style={{ padding: '12px 18px' }}>
+                  Dashboard
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    // --- 4. SPEAK PAGE ---
+    function SpeakView() {
+      const { addVoiceEntry, setActiveView } = useWellness();
+      const [selectedPreset, setSelectedPreset] = useState(SPEAK_PRESETS[0]);
+      const [isListening, setIsListening] = useState(false);
+      const [statusText, setStatusText] = useState('Tap microphone to speak');
+      const [transcription, setTranscription] = useState(SPEAK_PRESETS[0].transcription);
+      const [understanding, setUnderstanding] = useState(SPEAK_PRESETS[0].understanding);
+      const [guidance, setGuidance] = useState(SPEAK_PRESETS[0].guidance);
+      const [saved, setSaved] = useState(false);
+
+      const triggerListening = (preset = null) => {
+        setIsListening(true);
+        setStatusText('Listening...');
+        setSaved(false);
+
+        const target = preset || selectedPreset;
+        setSelectedPreset(target);
+
+        setTimeout(() => setStatusText('Simulating speech recognition...'), 800);
+        setTimeout(() => {
+          setTranscription(target.transcription);
+          setUnderstanding(target.understanding);
+          setGuidance(target.guidance);
+          setIsListening(false);
+          setStatusText('Analysis complete');
+        }, 1800);
+      };
+
+      const handleSave = () => {
+        addVoiceEntry(transcription, understanding);
+        setSaved(true);
+      };
+
+      return (
+        <div style={{ maxWidth: '960px', margin: '0 auto' }}>
+          <DisclaimerBanner compact={true} />
+
+          <div style={{ marginBottom: '24px' }}>
+            <h1 style={{ fontSize: '2.2rem', fontWeight: 800, margin: 0 }}>Speak to HealthSnap</h1>
+            <p style={{ fontSize: '1rem', color: 'var(--text-secondary)', margin: '4px 0 0' }}>
+              "Tell us how you're feeling or describe your day."
+            </p>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))', gap: '24px' }}>
+            {/* Microphone Center Box */}
+            <div style={{
+              background: 'var(--bg-surface)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-xl)',
+              padding: '36px 24px', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center'
+            }}>
+              {/* Audio visualizer bars */}
+              <div style={{ display: 'flex', gap: '6px', alignItems: 'center', height: '40px', marginBottom: '24px' }}>
+                {[1, 2, 3, 4, 5, 6, 7, 8].map(i => (
+                  <div
+                    key={i}
+                    style={{
+                      width: '5px', borderRadius: '999px',
+                      background: isListening ? 'var(--secondary)' : 'var(--border-subtle)',
+                      height: isListening ? `${10 + (i % 4) * 8}px` : '8px',
+                      animation: isListening ? `audioWave 0.7s infinite alternate ${i * 0.1}s` : 'none'
+                    }}
+                  />
+                ))}
+              </div>
+
+              {/* Large Microphone Button */}
+              <button
+                onClick={() => triggerListening()}
+                style={{
+                  width: '110px', height: '110px', borderRadius: '50%',
+                  background: isListening ? 'linear-gradient(135deg, #06b6d4 0%, #0891b2 100%)' : 'linear-gradient(135deg, var(--primary) 0%, #059669 100%)',
+                  color: '#fff', fontSize: '2.8rem', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  boxShadow: isListening ? '0 0 35px rgba(6, 182, 212, 0.6)' : '0 8px 24px rgba(16, 185, 129, 0.4)',
+                  transform: isListening ? 'scale(1.05)' : 'scale(1)', marginBottom: '18px'
+                }}
+              >
+                🎤
+              </button>
+
+              <div style={{ fontSize: '1rem', fontWeight: 800, color: isListening ? 'var(--secondary)' : 'var(--text-main)' }}>
+                {statusText}
+              </div>
+              <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', margin: '4px 0 24px' }}>
+                Click above to simulate speech input or select a preset below.
+              </p>
+
+              {/* Preset buttons */}
+              <div style={{ width: '100%', textAlign: 'left' }}>
+                <span style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-muted)' }}>QUICK SPEECH SCENARIOS:</span>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '8px' }}>
+                  {SPEAK_PRESETS.map(p => (
+                    <button
+                      key={p.id}
+                      onClick={() => triggerListening(p)}
+                      style={{
+                        padding: '10px 12px', background: selectedPreset.id === p.id ? 'rgba(6, 182, 212, 0.1)' : 'var(--bg-subtle)',
+                        border: selectedPreset.id === p.id ? '1px solid var(--secondary)' : '1px solid var(--border-subtle)',
+                        borderRadius: 'var(--radius-md)', textAlign: 'left'
+                      }}
+                    >
+                      <strong style={{ fontSize: '0.82rem', display: 'block' }}>{p.label}</strong>
+                      <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', fontStyle: 'italic' }}>"{p.transcription}"</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* AI Understanding & Guidance */}
+            <div style={{ background: 'var(--bg-surface)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-xl)', padding: '26px' }}>
+              {/* Transcribed text */}
+              <div style={{ marginBottom: '20px' }}>
+                <div style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase' }}>Transcribed Speech:</div>
+                <div style={{ background: 'var(--bg-subtle)', padding: '14px', borderRadius: 'var(--radius-md)', fontSize: '0.95rem', fontStyle: 'italic', marginTop: '6px' }}>
+                  "{transcription}"
+                </div>
+              </div>
+
+              {/* AI Understanding */}
+              <div style={{ marginBottom: '20px' }}>
+                <h3 style={{ fontSize: '1.25rem', fontWeight: 800, margin: '0 0 10px' }}>AI Understanding</h3>
+                <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '8px' }}>Detected wellness information:</div>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px' }}>
+                  <div style={{ background: 'var(--bg-subtle)', padding: '10px', borderRadius: 'var(--radius-md)', textAlign: 'center' }}>
+                    <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)', display: 'block' }}>Sleep</span>
+                    <strong style={{ color: '#f59e0b', fontSize: '0.95rem' }}>{understanding.sleep}</strong>
+                  </div>
+                  <div style={{ background: 'var(--bg-subtle)', padding: '10px', borderRadius: 'var(--radius-md)', textAlign: 'center' }}>
+                    <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)', display: 'block' }}>Energy</span>
+                    <strong style={{ color: '#ef4444', fontSize: '0.95rem' }}>{understanding.energy}</strong>
+                  </div>
+                  <div style={{ background: 'var(--bg-subtle)', padding: '10px', borderRadius: 'var(--radius-md)', textAlign: 'center' }}>
+                    <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)', display: 'block' }}>Mood</span>
+                    <strong style={{ color: '#8b5cf6', fontSize: '0.95rem' }}>{understanding.mood}</strong>
+                  </div>
+                </div>
+              </div>
+
+              {/* Suggested Guidance */}
+              <div style={{ background: 'rgba(6, 182, 212, 0.08)', border: '1px solid rgba(6, 182, 212, 0.25)', borderRadius: 'var(--radius-md)', padding: '16px', marginBottom: '16px' }}>
+                <h4 style={{ fontSize: '0.9rem', color: 'var(--secondary)', margin: '0 0 4px' }}>Suggested Guidance</h4>
+                <p style={{ fontSize: '0.85rem', margin: 0, lineHeight: 1.5, color: 'var(--text-secondary)' }}>
+                  "{guidance}"
+                </p>
+              </div>
+
+              <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '20px' }}>
+                🛡️ <em>"Do not make medical diagnoses." Strictly for self-awareness.</em>
+              </div>
+
+              <div style={{ display: 'flex', gap: '10px' }}>
+                <button onClick={handleSave} disabled={saved} className="btn-primary" style={{ flex: 1, padding: '12px' }}>
+                  {saved ? '✓ Logged to Wellness History' : '💾 Log to Wellness History'}
+                </button>
+                <button onClick={() => setActiveView('journal')} className="btn-secondary" style={{ padding: '12px 18px' }}>
+                  View Log
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    // --- 5. WELLNESS JOURNAL (LOG WELLNESS) ---
+    function WellnessJournalView() {
+      const { journal, addJournalEntry } = useWellness();
+      const [feeling, setFeeling] = useState('Great');
+      const [notes, setNotes] = useState('Headache for 2 hours');
+      const [severity, setSeverity] = useState('Moderate');
+      const [duration, setDuration] = useState('1–3 hours');
+      const [alertMsg, setAlertMsg] = useState(false);
+
+      const feelings = [
+        { label: "Great", emoji: "😄" },
+        { label: "Good", emoji: "🙂" },
+        { label: "Okay", emoji: "😐" },
+        { label: "Tired", emoji: "🥱" },
+        { label: "Stressed", emoji: "😰" },
+        { label: "Low energy", emoji: "🔋" }
+      ];
+
+      const severities = ["Mild", "Moderate", "High"];
+      const durations = [
+        "Less than 1 hour",
+        "1–3 hours",
+        "3–6 hours",
+        "More than 6 hours"
+      ];
+
+      const handleSave = (e) => {
+        e.preventDefault();
+        const obj = feelings.find(f => f.label === feeling);
+        addJournalEntry({
+          feeling,
+          feelingEmoji: obj ? obj.emoji : '🙂',
+          symptoms: notes || 'Daily wellness observation',
+          severity,
+          duration
+        });
+        setAlertMsg(true);
+        setTimeout(() => setAlertMsg(false), 4000);
+      };
+
+      return (
+        <div style={{ maxWidth: '960px', margin: '0 auto' }}>
+          <DisclaimerBanner compact={true} />
+
+          <div style={{ marginBottom: '24px' }}>
+            <h1 style={{ fontSize: '2.2rem', fontWeight: 800, margin: 0 }}>Log Wellness</h1>
+            <p style={{ fontSize: '1rem', color: 'var(--text-secondary)', margin: '4px 0 0' }}>
+              Allow users to manually record how they feel, symptoms, severity, and duration.
+            </p>
+          </div>
+
+          {alertMsg && (
+            <div style={{
+              background: 'rgba(16, 185, 129, 0.12)', border: '1px solid var(--primary)', borderRadius: 'var(--radius-md)',
+              padding: '12px 18px', color: 'var(--primary-dark)', fontWeight: 700, marginBottom: '20px'
+            }}>
+              ✓ "Wellness entry added successfully."
+            </div>
+          )}
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))', gap: '24px' }}>
+            {/* Form */}
+            <form onSubmit={handleSave} style={{ background: 'var(--bg-surface)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-xl)', padding: '26px' }}>
+              {/* How are you feeling? */}
+              <div style={{ marginBottom: '20px' }}>
+                <label style={{ fontSize: '0.9rem', fontWeight: 800, display: 'block', marginBottom: '10px' }}>
+                  How are you feeling?
+                </label>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px' }}>
+                  {feelings.map(f => (
+                    <button
+                      key={f.label}
+                      type="button"
+                      onClick={() => setFeeling(f.label)}
+                      style={{
+                        padding: '10px', borderRadius: 'var(--radius-md)',
+                        background: feeling === f.label ? 'rgba(16, 185, 129, 0.15)' : 'var(--bg-subtle)',
+                        border: feeling === f.label ? '2px solid var(--primary)' : '1px solid var(--border-subtle)',
+                        display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px'
+                      }}
+                    >
+                      <span style={{ fontSize: '1.4rem' }}>{f.emoji}</span>
+                      <span style={{ fontSize: '0.75rem', fontWeight: 600 }}>{f.label}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Symptoms / Wellness Notes */}
+              <div style={{ marginBottom: '20px' }}>
+                <label style={{ fontSize: '0.9rem', fontWeight: 800, display: 'block', marginBottom: '8px' }}>
+                  Symptoms / Wellness Notes
+                </label>
+                <input
+                  type="text"
+                  value={notes}
+                  onChange={e => setNotes(e.target.value)}
+                  placeholder="e.g. Headache for 2 hours"
+                  required
+                  style={{ width: '100%', padding: '12px', fontSize: '0.9rem' }}
+                />
+              </div>
+
+              {/* Severity Slider: Mild, Moderate, High */}
+              <div style={{ marginBottom: '20px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
+                  <label style={{ fontSize: '0.9rem', fontWeight: 800 }}>Severity</label>
+                  <strong style={{ color: severity === 'High' ? '#ef4444' : severity === 'Moderate' ? '#f59e0b' : 'var(--primary)' }}>
+                    {severity}
+                  </strong>
+                </div>
+                <input
+                  type="range"
+                  min="0"
+                  max="2"
+                  step="1"
+                  value={severities.indexOf(severity)}
+                  onChange={e => setSeverity(severities[parseInt(e.target.value)])}
+                  style={{ width: '100%', accentColor: 'var(--primary)', cursor: 'pointer' }}
+                />
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                  <span>Mild</span>
+                  <span>Moderate</span>
+                  <span>High</span>
+                </div>
+              </div>
+
+              {/* Duration Dropdown */}
+              <div style={{ marginBottom: '24px' }}>
+                <label style={{ fontSize: '0.9rem', fontWeight: 800, display: 'block', marginBottom: '8px' }}>
+                  Duration
+                </label>
+                <select
+                  value={duration}
+                  onChange={e => setDuration(e.target.value)}
+                  style={{ width: '100%', padding: '11px', fontSize: '0.9rem', cursor: 'pointer' }}
+                >
+                  {durations.map(d => <option key={d} value={d}>{d}</option>)}
+                </select>
+              </div>
+
+              <button type="submit" className="btn-primary" style={{ width: '100%', padding: '13px' }}>
+                Save Entry
+              </button>
+            </form>
+
+            {/* Saved History */}
+            <div style={{ background: 'var(--bg-surface)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-xl)', padding: '26px' }}>
+              <h3 style={{ fontSize: '1.25rem', fontWeight: 800, marginBottom: '16px' }}>Wellness Log History</h3>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', maxHeight: '420px', overflowY: 'auto' }}>
+                {journal.map(j => (
+                  <div key={j.id} style={{ background: 'var(--bg-app)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-md)', padding: '14px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <span style={{ fontSize: '1.2rem' }}>{j.feelingEmoji}</span>
+                        <strong style={{ fontSize: '0.9rem' }}>Feeling {j.feeling}</strong>
+                      </div>
+                      <span className="badge-tag badge-emerald">{j.severity}</span>
+                    </div>
+                    <p style={{ fontSize: '0.85rem', margin: '4px 0', color: 'var(--text-secondary)' }}>"{j.symptoms}"</p>
+                    <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>
+                      Duration: {j.duration} • {j.timestamp}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    // --- 6. ACTIVITY TRACKING ---
+    function ActivityView() {
+      const { activity, logQuickSteps } = useWellness();
+
+      return (
+        <div style={{ maxWidth: '960px', margin: '0 auto' }}>
+          <DisclaimerBanner compact={true} />
+
+          <div style={{ marginBottom: '24px' }}>
+            <h1 style={{ fontSize: '2.2rem', fontWeight: 800, margin: 0 }}>Activity</h1>
+            <p style={{ fontSize: '1rem', color: 'var(--text-secondary)', margin: '4px 0 0' }}>
+              "You're 80% toward your daily activity goal."
+            </p>
+          </div>
+
+          {/* Today's Activity Stats Grid */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px', marginBottom: '24px' }}>
+            <div style={{ background: 'var(--bg-surface)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-lg)', padding: '20px' }}>
+              <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 600 }}>Steps:</span>
+              <h3 style={{ fontSize: '1.8rem', fontWeight: 900, color: 'var(--primary)', margin: '4px 0' }}>
+                {activity.steps.toLocaleString()}
+              </h3>
+              <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Daily Goal: {activity.goal.toLocaleString()} steps</span>
+            </div>
+
+            <div style={{ background: 'var(--bg-surface)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-lg)', padding: '20px' }}>
+              <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 600 }}>Active Minutes:</span>
+              <h3 style={{ fontSize: '1.8rem', fontWeight: 900, color: 'var(--secondary)', margin: '4px 0' }}>
+                {activity.activeMinutes} min
+              </h3>
+              <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Target: 60 min</span>
+            </div>
+
+            <div style={{ background: 'var(--bg-surface)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-lg)', padding: '20px' }}>
+              <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 600 }}>Distance:</span>
+              <h3 style={{ fontSize: '1.8rem', fontWeight: 900, color: '#8b5cf6', margin: '4px 0' }}>
+                {activity.distanceKm} km
+              </h3>
+              <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Outdoor + indoor estimate</span>
+            </div>
+
+            <div style={{ background: 'var(--bg-surface)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-lg)', padding: '20px' }}>
+              <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 600 }}>Daily Goal:</span>
+              <h3 style={{ fontSize: '1.8rem', fontWeight: 900, color: '#f59e0b', margin: '4px 0' }}>
+                8,000 steps
+              </h3>
+              <span style={{ fontSize: '0.75rem', color: 'var(--primary)', fontWeight: 700 }}>80% achieved</span>
+            </div>
+          </div>
+
+          {/* Quick Step Logger */}
+          <div style={{ display: 'flex', gap: '10px', alignItems: 'center', marginBottom: '24px' }}>
+            <span style={{ fontSize: '0.85rem', fontWeight: 700 }}>Simulate movement:</span>
+            <button onClick={() => logQuickSteps(500)} className="btn-secondary" style={{ padding: '8px 14px', fontSize: '0.82rem' }}>
+              +500 Steps
+            </button>
+            <button onClick={() => logQuickSteps(1000)} className="btn-primary" style={{ padding: '8px 16px', fontSize: '0.82rem' }}>
+              +1,000 Steps (Walk)
+            </button>
+          </div>
+
+          {/* Weekly Activity Chart */}
+          <div style={{ background: 'var(--bg-surface)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-xl)', padding: '26px' }}>
+            <h3 style={{ fontSize: '1.25rem', fontWeight: 800, marginBottom: '6px' }}>Weekly Activity Chart</h3>
+            <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)', marginBottom: '20px' }}>
+              Monday • Tuesday • Wednesday • Thursday • Friday • Saturday • Sunday
+            </p>
+
+            <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', height: '220px', padding: '0 10px', borderBottom: '1px solid var(--border-subtle)' }}>
+              {activity.weeklyData.map(d => {
+                const heightPct = Math.min(100, Math.round((d.steps / 10000) * 100));
+                const met = d.steps >= 8000;
+                return (
+                  <div key={d.day} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', flex: 1 }}>
+                    <span style={{ fontSize: '0.72rem', fontWeight: 700, marginBottom: '6px' }}>{d.steps}</span>
+                    <div style={{
+                      width: '38px', height: `${heightPct}%`, borderRadius: '6px 6px 0 0',
+                      background: met ? 'linear-gradient(180deg, var(--primary) 0%, #059669 100%)' : '#94a3b8'
+                    }} />
+                    <span style={{ fontSize: '0.8rem', fontWeight: 600, marginTop: '8px' }}>{d.day}</span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    // --- 7. SLEEP SECTION ---
+    function SleepView() {
+      const { sleep } = useWellness();
+
+      return (
+        <div style={{ maxWidth: '960px', margin: '0 auto' }}>
+          <DisclaimerBanner compact={true} />
+
+          <div style={{ marginBottom: '24px' }}>
+            <h1 style={{ fontSize: '2.2rem', fontWeight: 800, margin: 0 }}>Sleep</h1>
+            <p style={{ fontSize: '1rem', color: 'var(--text-secondary)', margin: '4px 0 0' }}>
+              Monitor duration, sleep quality ratings, and circadian schedules.
+            </p>
+          </div>
+
+          {/* Awareness Message */}
+          <div style={{
+            background: 'rgba(6, 182, 212, 0.08)', border: '1px solid rgba(6, 182, 212, 0.25)',
+            borderRadius: 'var(--radius-xl)', padding: '20px 24px', marginBottom: '24px'
+          }}>
+            <h4 style={{ fontSize: '0.9rem', color: 'var(--secondary)', textTransform: 'uppercase', margin: '0 0 4px' }}>
+              Sleep Awareness Message
+            </h4>
+            <h3 style={{ fontSize: '1.15rem', fontWeight: 800, margin: 0 }}>
+              "{sleep.awarenessMessage}"
+            </h3>
+          </div>
+
+          {/* Last Night Overview */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '16px', marginBottom: '24px' }}>
+            <div style={{ background: 'var(--bg-surface)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-lg)', padding: '20px' }}>
+              <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Sleep Duration:</span>
+              <h3 style={{ fontSize: '1.8rem', fontWeight: 900, color: 'var(--secondary)', margin: '4px 0' }}>
+                {sleep.lastNightDuration}
+              </h3>
+              <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Target: 7–8h</span>
+            </div>
+
+            <div style={{ background: 'var(--bg-surface)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-lg)', padding: '20px' }}>
+              <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Sleep Goal:</span>
+              <h3 style={{ fontSize: '1.8rem', fontWeight: 900, color: 'var(--primary)', margin: '4px 0' }}>
+                {sleep.goalDuration}
+              </h3>
+              <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Recommended range</span>
+            </div>
+
+            <div style={{ background: 'var(--bg-surface)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-lg)', padding: '20px' }}>
+              <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Sleep Quality:</span>
+              <h3 style={{ fontSize: '1.8rem', fontWeight: 900, color: '#8b5cf6', margin: '4px 0' }}>
+                {sleep.quality}
+              </h3>
+              <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Efficiency: {sleep.efficiency}%</span>
+            </div>
+          </div>
+
+          {/* Weekly Sleep Chart */}
+          <div style={{ background: 'var(--bg-surface)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-xl)', padding: '26px' }}>
+            <h3 style={{ fontSize: '1.25rem', fontWeight: 800, marginBottom: '6px' }}>Weekly Sleep Chart</h3>
+            <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)', marginBottom: '20px' }}>
+              Mon – 7h 10m • Tue – 6h 40m • Wed – 7h 30m • Thu – 6h 20m • Fri – 6h 50m • Sat – 8h • Sun – 6h 30m
+            </p>
+
+            <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', height: '220px', padding: '0 10px', borderBottom: '1px solid var(--border-subtle)' }}>
+              {sleep.weeklyData.map(d => {
+                const heightPct = Math.min(100, Math.round((d.hours / 9) * 100));
+                const met = d.hours >= 7.0;
+                return (
+                  <div key={d.day} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', flex: 1 }}>
+                    <span style={{ fontSize: '0.72rem', fontWeight: 700, marginBottom: '6px' }}>{d.duration}</span>
+                    <div style={{
+                      width: '38px', height: `${heightPct}%`, borderRadius: '6px 6px 0 0',
+                      background: met ? 'linear-gradient(180deg, #06b6d4 0%, #0284c7 100%)' : '#94a3b8'
+                    }} />
+                    <span style={{ fontSize: '0.8rem', fontWeight: 600, marginTop: '8px' }}>{d.day}</span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    // --- 8. AI INSIGHTS PAGE ---
+    function AIInsightsView() {
+      const { patterns, setActiveView } = useWellness();
+
+      return (
+        <div style={{ maxWidth: '960px', margin: '0 auto' }}>
+          <DisclaimerBanner compact={true} />
+
+          <div style={{ marginBottom: '24px' }}>
+            <h1 style={{ fontSize: '2.2rem', fontWeight: 800, margin: 0 }}>AI Wellness Insights</h1>
+            <p style={{ fontSize: '1.05rem', color: 'var(--text-secondary)', margin: '4px 0 0' }}>
+              "HealthSnap combines your recent wellness signals to identify patterns."
+            </p>
+          </div>
+
+          {/* Visual AI Analysis Section: Inputs connecting to AI Pattern Analysis */}
+          <div style={{ background: 'var(--bg-surface)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-xl)', padding: '28px', marginBottom: '28px' }}>
+            <div style={{ textAlign: 'center', marginBottom: '20px' }}>
+              <span style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--primary)', textTransform: 'uppercase' }}>Visual Signal Synthesis</span>
+              <h3 style={{ fontSize: '1.25rem', fontWeight: 800, margin: '4px 0 0' }}>Multimodal Health Feeds</h3>
+            </div>
+
+            {/* Inputs: 📸 Food, 🎤 Voice, 🏃 Activity, 😴 Sleep, 📝 Wellness Journal */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '10px', marginBottom: '20px' }}>
+              {[
+                { name: "📸 Food", desc: "Nutrition scan" },
+                { name: "🎤 Voice", desc: "Spoken mood" },
+                { name: "🏃 Activity", desc: "Steps & distance" },
+                { name: "😴 Sleep", desc: "Circadian rest" },
+                { name: "📝 Journal", desc: "Symptom notes" }
+              ].map(sig => (
+                <div key={sig.name} style={{ background: 'var(--bg-subtle)', padding: '14px', borderRadius: 'var(--radius-md)', textAlign: 'center' }}>
+                  <strong style={{ fontSize: '0.9rem', display: 'block' }}>{sig.name}</strong>
+                  <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>{sig.desc}</span>
+                </div>
+              ))}
+            </div>
+
+            {/* Connect them visually to: AI Pattern Analysis */}
+            <div style={{
+              background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.12) 0%, rgba(6, 182, 212, 0.12) 100%)',
+              border: '1.5px solid var(--primary)', borderRadius: 'var(--radius-lg)', padding: '20px',
+              textAlign: 'center'
+            }}>
+              <div style={{ fontSize: '1.6rem', marginBottom: '6px' }}>🧠 ➔ ✨</div>
+              <h4 style={{ fontSize: '1.2rem', fontWeight: 800, margin: '0 0 4px' }}>AI Pattern Analysis</h4>
+              <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', margin: 0 }}>
+                Correlating food quality, voice cues, step count, and sleep depth in real time.
+              </p>
+            </div>
+          </div>
+
+          {/* Detected Patterns */}
+          <div style={{ marginBottom: '24px' }}>
+            <h3 style={{ fontSize: '1.3rem', fontWeight: 800, marginBottom: '16px' }}>Detected Patterns</h3>
+
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '16px' }}>
+              {/* Pattern 1 */}
+              <div style={{ background: 'var(--bg-surface)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-lg)', padding: '22px' }}>
+                <span className="badge-tag badge-emerald">Pattern 1</span>
+                <h4 style={{ fontSize: '1.15rem', fontWeight: 800, margin: '8px 0 6px' }}>Sleep + Activity</h4>
+                <p style={{ fontSize: '0.88rem', color: 'var(--text-secondary)', lineHeight: 1.5, margin: '0 0 12px 0' }}>
+                  "Your activity has been lower on days when your sleep duration is below your usual level."
+                </p>
+                <button onClick={() => setActiveView('guidance')} style={{ color: 'var(--primary)', fontWeight: 700, fontSize: '0.82rem' }}>
+                  View Sleep Guidance ➔
+                </button>
+              </div>
+
+              {/* Pattern 2 */}
+              <div style={{ background: 'var(--bg-surface)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-lg)', padding: '22px' }}>
+                <span className="badge-tag badge-blue">Pattern 2</span>
+                <h4 style={{ fontSize: '1.15rem', fontWeight: 800, margin: '8px 0 6px' }}>Food + Activity</h4>
+                <p style={{ fontSize: '0.88rem', color: 'var(--text-secondary)', lineHeight: 1.5, margin: '0 0 12px 0' }}>
+                  "Your recent meals and activity levels show an opportunity to improve daily balance."
+                </p>
+                <button onClick={() => setActiveView('guidance')} style={{ color: 'var(--secondary)', fontWeight: 700, fontSize: '0.82rem' }}>
+                  View Meal Balance ➔
+                </button>
+              </div>
+
+              {/* Pattern 3 */}
+              <div style={{ background: 'var(--bg-surface)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-lg)', padding: '22px' }}>
+                <span className="badge-tag badge-amber">Pattern 3</span>
+                <h4 style={{ fontSize: '1.15rem', fontWeight: 800, margin: '8px 0 6px' }}>Wellness Journal</h4>
+                <p style={{ fontSize: '0.88rem', color: 'var(--text-secondary)', lineHeight: 1.5, margin: '0 0 12px 0' }}>
+                  "You reported tiredness on multiple days this week."
+                </p>
+                <button onClick={() => setActiveView('journal')} style={{ color: '#d97706', fontWeight: 700, fontSize: '0.82rem' }}>
+                  Review Symptoms ➔
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    // --- 9. PERSONALIZED GUIDANCE ---
+    function GuidanceView() {
+      const { guidance, toggleGuidance, logQuickSteps, setActiveView, showToast } = useWellness();
+
+      const handleAction = (g) => {
+        if (g.title === "Stay Active") {
+          logQuickSteps(1000);
+          toggleGuidance(g.id);
+        } else if (g.title === "Balanced Meals") {
+          setActiveView('snap');
+        } else if (g.title === "Stay Hydrated") {
+          showToast("💧 +250ml water logged!");
+          toggleGuidance(g.id);
+        } else {
+          toggleGuidance(g.id);
+        }
+      };
+
+      return (
+        <div style={{ maxWidth: '960px', margin: '0 auto' }}>
+          <DisclaimerBanner compact={true} />
+
+          <div style={{ marginBottom: '24px' }}>
+            <h1 style={{ fontSize: '2.2rem', fontWeight: 800, margin: 0 }}>Recommended For You</h1>
+            <p style={{ fontSize: '1rem', color: 'var(--text-secondary)', margin: '4px 0 0' }}>
+              Actionable recommendations tailored to your personal patterns. (Non-medical advice).
+            </p>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '20px' }}>
+            {guidance.map(item => (
+              <div
+                key={item.id}
+                style={{
+                  background: 'var(--bg-surface)', border: item.completed ? '1.5px solid var(--primary)' : '1px solid var(--border-subtle)',
+                  borderRadius: 'var(--radius-xl)', padding: '24px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between'
+                }}
+              >
+                <div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                    <span style={{ fontSize: '1.8rem' }}>
+                      {item.title === 'Improve Sleep' ? '🌙' : item.title === 'Stay Active' ? '🏃' : item.title === 'Balanced Meals' ? '🥗' : '💧'}
+                    </span>
+                    <button onClick={() => toggleGuidance(item.id)} style={{ fontSize: '1.2rem' }}>
+                      {item.completed ? '✅' : '⚪'}
+                    </button>
+                  </div>
+
+                  <h3 style={{ fontSize: '1.2rem', fontWeight: 800, margin: '0 0 6px' }}>{item.title}</h3>
+                  <p style={{ fontSize: '0.88rem', color: 'var(--text-secondary)', lineHeight: 1.5, margin: 0 }}>
+                    "{item.description}"
+                  </p>
+                </div>
+
+                <div style={{ marginTop: '20px', paddingTop: '16px', borderTop: '1px solid var(--divider)' }}>
+                  <button
+                    onClick={() => handleAction(item)}
+                    className={item.completed ? 'btn-secondary' : 'btn-primary'}
+                    style={{ width: '100%', padding: '10px', fontSize: '0.86rem' }}
+                  >
+                    {item.completed ? '✓ Completed' : item.actionLabel}
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      );
+    }
+
+    // --- 10. WELLNESS TRENDS (TRACK PAGE) ---
+    function TrendsView() {
+      const [filter, setFilter] = useState('7d');
+
+      const trendScores = [
+        { day: "Monday", score: 72 },
+        { day: "Tuesday", score: 75 },
+        { day: "Wednesday", score: 78 },
+        { day: "Thursday", score: 74 },
+        { day: "Friday", score: 81 },
+        { day: "Saturday", score: 79 },
+        { day: "Sunday", score: 78 }
+      ];
+
+      return (
+        <div style={{ maxWidth: '960px', margin: '0 auto' }}>
+          <DisclaimerBanner compact={true} />
+
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px', marginBottom: '24px' }}>
+            <div>
+              <h1 style={{ fontSize: '2.2rem', fontWeight: 800, margin: 0 }}>Your Wellness Journey</h1>
+              <p style={{ fontSize: '1rem', color: 'var(--text-secondary)', margin: '4px 0 0' }}>
+                Charts for Wellness Score, Activity, Sleep, Food, Mood, and Logged events.
+              </p>
+            </div>
+
+            {/* Date Filters: 7 Days | 30 Days | 3 Months */}
+            <div style={{ display: 'flex', background: 'var(--bg-subtle)', padding: '4px', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-subtle)' }}>
+              {[
+                { k: '7d', l: '7 Days' },
+                { k: '30d', l: '30 Days' },
+                { k: '3m', l: '3 Months' }
+              ].map(tab => (
+                <button
+                  key={tab.k}
+                  onClick={() => setFilter(tab.k)}
+                  style={{
+                    padding: '8px 16px', borderRadius: '8px', fontSize: '0.85rem', fontWeight: filter === tab.k ? 700 : 500,
+                    background: filter === tab.k ? 'var(--primary)' : 'transparent', color: filter === tab.k ? '#fff' : 'var(--text-secondary)'
+                  }}
+                >
+                  {tab.l}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Your Progress */}
+          <div style={{ background: 'rgba(16, 185, 129, 0.1)', border: '1px solid rgba(16, 185, 129, 0.25)', borderRadius: 'var(--radius-xl)', padding: '20px 24px', marginBottom: '24px' }}>
+            <h3 style={{ fontSize: '1.15rem', fontWeight: 800, margin: '0 0 4px' }}>Your Progress</h3>
+            <p style={{ fontSize: '0.92rem', color: 'var(--text-secondary)', margin: 0 }}>
+              "Your overall wellness score has improved compared with last week."
+            </p>
+          </div>
+
+          {/* Wellness Score Trend */}
+          <div style={{ background: 'var(--bg-surface)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-xl)', padding: '26px', marginBottom: '24px' }}>
+            <h3 style={{ fontSize: '1.25rem', fontWeight: 800, marginBottom: '6px' }}>Wellness Score Trend</h3>
+            <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)', marginBottom: '20px' }}>
+              Monday: 72 • Tuesday: 75 • Wednesday: 78 • Thursday: 74 • Friday: 81 • Saturday: 79 • Sunday: 78
+            </p>
+
+            <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', height: '220px', padding: '0 10px', borderBottom: '1px solid var(--border-subtle)' }}>
+              {trendScores.map(t => {
+                const heightPct = Math.round(((t.score - 50) / 50) * 100);
+                return (
+                  <div key={t.day} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', flex: 1 }}>
+                    <span style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--primary)', marginBottom: '6px' }}>{t.score}</span>
+                    <div style={{
+                      width: '42px', height: `${heightPct}%`, borderRadius: '6px 6px 0 0',
+                      background: 'linear-gradient(180deg, var(--primary) 0%, #06b6d4 100%)'
+                    }} />
+                    <span style={{ fontSize: '0.8rem', fontWeight: 600, marginTop: '8px' }}>{t.day.slice(0, 3)}</span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    // --- 11. PROFILE & PRIVACY PAGE ---
+    function ProfileView() {
+      const { user, setUser, theme, toggleTheme, exportData, resetData } = useWellness();
+      const [confirmReset, setConfirmReset] = useState(false);
+
+      const allGoals = [
+        "Improve sleep",
+        "Increase activity",
+        "Improve food habits",
+        "Maintain healthy routine"
+      ];
+
+      const toggleGoal = (g) => {
+        const has = user.goals.includes(g);
+        setUser(prev => ({
+          ...prev,
+          goals: has ? prev.goals.filter(x => x !== g) : [...prev.goals, g]
+        }));
+      };
+
+      const toggleSetting = (k) => {
+        setUser(prev => ({
+          ...prev,
+          settings: { ...prev.settings, [k]: !prev.settings[k] }
+        }));
+      };
+
+      return (
+        <div style={{ maxWidth: '960px', margin: '0 auto' }}>
+          <DisclaimerBanner compact={true} />
+
+          <div style={{ marginBottom: '24px' }}>
+            <h1 style={{ fontSize: '2.2rem', fontWeight: 800, margin: 0 }}>My Profile</h1>
+            <p style={{ fontSize: '1rem', color: 'var(--text-secondary)', margin: '4px 0 0' }}>
+              Personal wellness goals, privacy parameters, and data controls.
+            </p>
+          </div>
+
+          {/* User Info */}
+          <div style={{ background: 'var(--bg-surface)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-xl)', padding: '24px', display: 'flex', alignItems: 'center', gap: '20px', marginBottom: '24px' }}>
+            <img src={user.avatar} alt={user.name} style={{ width: '74px', height: '74px', borderRadius: '50%', objectFit: 'cover', border: '3px solid var(--primary)' }} />
+            <div>
+              <h3 style={{ fontSize: '1.3rem', fontWeight: 800, margin: 0 }}>{user.name}</h3>
+              <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', margin: '2px 0 8px' }}>{user.email}</p>
+              <span className="badge-tag badge-emerald">Verified Demo Profile</span>
+            </div>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '24px', marginBottom: '24px' }}>
+            {/* Goals */}
+            <div style={{ background: 'var(--bg-surface)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-xl)', padding: '24px' }}>
+              <h3 style={{ fontSize: '1.2rem', fontWeight: 800, marginBottom: '14px' }}>Wellness Goals</h3>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                {allGoals.map(goal => {
+                  const checked = user.goals.includes(goal);
+                  return (
+                    <div
+                      key={goal}
+                      onClick={() => toggleGoal(goal)}
+                      style={{
+                        padding: '12px', borderRadius: 'var(--radius-md)', background: checked ? 'rgba(16, 185, 129, 0.1)' : 'var(--bg-subtle)',
+                        border: checked ? '1px solid var(--primary)' : '1px solid var(--border-subtle)',
+                        display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer'
+                      }}
+                    >
+                      <span style={{ fontSize: '0.88rem', fontWeight: 600 }}>{goal}</span>
+                      <span>{checked ? '✅' : '⚪'}</span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Settings */}
+            <div style={{ background: 'var(--bg-surface)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-xl)', padding: '24px' }}>
+              <h3 style={{ fontSize: '1.2rem', fontWeight: 800, marginBottom: '14px' }}>Settings</h3>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                {/* Notifications */}
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 12px', background: 'var(--bg-subtle)', borderRadius: 'var(--radius-md)' }}>
+                  <span style={{ fontSize: '0.88rem', fontWeight: 600 }}>Notifications</span>
+                  <input type="checkbox" checked={user.settings.notifications} onChange={() => toggleSetting('notifications')} style={{ width: '18px', height: '18px', accentColor: 'var(--primary)' }} />
+                </div>
+                {/* Privacy */}
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 12px', background: 'var(--bg-subtle)', borderRadius: 'var(--radius-md)' }}>
+                  <span style={{ fontSize: '0.88rem', fontWeight: 600 }}>Privacy Mode</span>
+                  <input type="checkbox" checked={true} readOnly style={{ width: '18px', height: '18px', accentColor: 'var(--primary)' }} />
+                </div>
+                {/* Data sharing */}
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 12px', background: 'var(--bg-subtle)', borderRadius: 'var(--radius-md)' }}>
+                  <span style={{ fontSize: '0.88rem', fontWeight: 600 }}>Data sharing</span>
+                  <input type="checkbox" checked={user.settings.dataSharing} onChange={() => toggleSetting('dataSharing')} style={{ width: '18px', height: '18px', accentColor: 'var(--primary)' }} />
+                </div>
+                {/* AI analysis */}
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 12px', background: 'var(--bg-subtle)', borderRadius: 'var(--radius-md)' }}>
+                  <span style={{ fontSize: '0.88rem', fontWeight: 600 }}>AI analysis</span>
+                  <input type="checkbox" checked={user.settings.edgeAi} onChange={() => toggleSetting('edgeAi')} style={{ width: '18px', height: '18px', accentColor: 'var(--primary)' }} />
+                </div>
+                {/* Dark mode */}
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 12px', background: 'var(--bg-subtle)', borderRadius: 'var(--radius-md)' }}>
+                  <span style={{ fontSize: '0.88rem', fontWeight: 600 }}>Dark mode</span>
+                  <button onClick={toggleTheme} className="btn-secondary" style={{ padding: '4px 12px', fontSize: '0.75rem' }}>
+                    {theme === 'dark' ? 'Dark Active' : 'Light Active'}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Section 16: Privacy & AI Safety */}
+          <div style={{ background: 'var(--bg-surface)', border: '1px solid rgba(16, 185, 129, 0.3)', borderRadius: 'var(--radius-xl)', padding: '26px', marginBottom: '24px' }}>
+            <h3 style={{ fontSize: '1.25rem', fontWeight: 800, margin: '0 0 8px' }}>Your Wellness. Your Data.</h3>
+            <p style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', lineHeight: 1.6, margin: '0 0 14px' }}>
+              "HealthSnap is designed for wellness awareness. Where possible, suitable AI processing can be performed on the device to reduce unnecessary data sharing."
+            </p>
+
+            <div style={{ background: 'rgba(239, 68, 68, 0.08)', border: '1px solid rgba(239, 68, 68, 0.25)', borderRadius: 'var(--radius-md)', padding: '14px', marginBottom: '14px' }}>
+              <strong style={{ color: '#dc2626', fontSize: '0.88rem', display: 'block', marginBottom: '4px' }}>Important:</strong>
+              <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', margin: 0, lineHeight: 1.5 }}>
+                "HealthSnap does not diagnose diseases, prescribe medication, or replace professional medical advice."
+              </p>
+            </div>
+
+            <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', margin: 0 }}>
+              "Consider speaking with a qualified healthcare professional if you are concerned about your symptoms."
+            </p>
+          </div>
+
+          {/* Buttons: Export & Delete Data */}
+          <div style={{ display: 'flex', gap: '14px', flexWrap: 'wrap' }}>
+            <button onClick={exportData} className="btn-secondary" style={{ padding: '12px 20px', fontSize: '0.9rem' }}>
+              📥 Export My Wellness Data
+            </button>
+
+            {!confirmReset ? (
+              <button
+                onClick={() => setConfirmReset(true)}
+                style={{ padding: '12px 20px', borderRadius: 'var(--radius-md)', background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', border: '1px solid rgba(239, 68, 68, 0.3)', fontWeight: 600, fontSize: '0.9rem' }}
+              >
+                🗑️ Delete My Data
+              </button>
+            ) : (
+              <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                <button onClick={() => { resetData(); setConfirmReset(false); }} style={{ padding: '12px 16px', borderRadius: 'var(--radius-md)', background: '#ef4444', color: '#fff', fontWeight: 700, fontSize: '0.85rem' }}>
+                  Confirm Reset Data
+                </button>
+                <button onClick={() => setConfirmReset(false)} className="btn-secondary" style={{ padding: '12px 14px', fontSize: '0.85rem' }}>
+                  Cancel
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      );
+    }
+
+    // --- MAIN APP ORCHESTRATOR ---
+    function AppContent() {
+      const { activeView, toast } = useWellness();
+
+      if (activeView === 'landing') {
+        return (
+          <>
+            <LandingPage />
+            {toast && <Toast text={toast} />}
+          </>
+        );
+      }
+
+      const renderView = () => {
+        switch (activeView) {
+          case 'dashboard': return <DashboardView />;
+          case 'snap': return <SnapFoodView />;
+          case 'speak': return <SpeakView />;
+          case 'journal': return <WellnessJournalView />;
+          case 'activity': return <ActivityView />;
+          case 'sleep': return <SleepView />;
+          case 'insights': return <AIInsightsView />;
+          case 'guidance': return <GuidanceView />;
+          case 'trends': return <TrendsView />;
+          case 'profile': return <ProfileView />;
+          default: return <DashboardView />;
+        }
+      };
+
+      return (
+        <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
+          <Header />
+          <div style={{ display: 'flex', flex: 1 }}>
+            <div className="desktop-sidebar">
+              <Sidebar />
+            </div>
+            <main style={{ flex: 1, padding: '28px 24px 84px', overflowY: 'auto' }}>
+              {renderView()}
+            </main>
+          </div>
+          <MobileNav />
+          {toast && <Toast text={toast} />}
+
+          <style>{`
+            @media (max-width: 900px) {
+              .desktop-sidebar { display: none !important; }
+            }
+            @media (min-width: 901px) {
+              .mobile-only-nav { display: none !important; }
+            }
+          `}</style>
+        </div>
+      );
+    }
+
+    function Toast({ text }) {
+      return (
+        <div style={{
+          position: 'fixed', bottom: '24px', right: '24px', zIndex: 9999,
+          background: 'var(--bg-surface-elevated)', color: 'var(--text-main)',
+          border: '1px solid var(--primary)', padding: '12px 20px', borderRadius: 'var(--radius-lg)',
+          boxShadow: '0 10px 25px rgba(0,0,0,0.2), 0 0 16px rgba(16, 185, 129, 0.3)',
+          display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.88rem', fontWeight: 600,
+          animation: 'fadeInUp 0.25s ease'
+        }}>
+          <span>{text}</span>
+        </div>
+      );
+    }
+
+    function App() {
+      return (
+        <WellnessProvider>
+          <AppContent />
+        </WellnessProvider>
+      );
+    }
+
+    ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+  </script>
+</body>
+</html>
