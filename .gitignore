@@ -1,0 +1,61 @@
+# ========================
+# Environment & Secrets
+# ========================
+.env
+.env.local
+.env.*.local
+
+# ========================
+# Frontend - Node / Vite
+# ========================
+node_modules/
+dist/
+dist-ssr/
+.vite/
+*.local
+
+# ========================
+# Backend - Python
+# ========================
+backend/.venv/
+backend/venv/
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.egg-info/
+*.egg
+.eggs/
+*.so
+build/
+develop-eggs/
+downloads/
+eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.whl
+
+# Database files
+*.db
+*.sqlite
+*.sqlite3
+
+# ========================
+# Logs & OS Files
+# ========================
+*.log
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ========================
+# IDE & Editor
+# ========================
+.vscode/
+.idea/
+*.swp
+*.swo

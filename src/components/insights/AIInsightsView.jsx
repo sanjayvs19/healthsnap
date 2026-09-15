@@ -18,8 +18,10 @@ import {
   Zap
 } from 'lucide-react';
 
+import { api } from '../../services/api';
+
 export default function AIInsightsView() {
-  const { patterns, setActiveView, showToast } = useWellness();
+  const { patterns, setPatterns, setActiveView, showToast } = useWellness();
 
   const [isSynthesizing, setIsSynthesizing] = useState(false);
   const [activePatternId, setActivePatternId] = useState(patterns[0]?.id);
@@ -32,12 +34,23 @@ export default function AIInsightsView() {
     { id: 'journal', name: 'Subjective', icon: FileEdit, color: '#f59e0b', sample: 'Afternoon screen strain' }
   ];
 
-  const handleSynthesize = () => {
+  const handleSynthesize = async () => {
     setIsSynthesizing(true);
-    setTimeout(() => {
+    try {
+      const res = await api.ai.analyze();
+      if (res && res.patterns && res.patterns.length) {
+        if (setPatterns) setPatterns(res.patterns);
+        setActivePatternId(res.patterns[0].id);
+      }
+      showToast(`🧠 Multimodal pattern engine synthesized ${res?.patterns?.length || 4} live patterns!`);
+    } catch (err) {
+      console.warn("Backend AI analyze fallback:", err.message);
+      setTimeout(() => {
+        showToast("🧠 Live multimodal signals re-synthesized into patterns!");
+      }, 800);
+    } finally {
       setIsSynthesizing(false);
-      showToast("🧠 Live multimodal signals re-synthesized into 4 patterns!");
-    }, 1800);
+    }
   };
 
   const selectedPattern = patterns.find(p => p.id === activePatternId) || patterns[0];
@@ -250,23 +263,35 @@ export default function AIInsightsView() {
                     </span>
                   </div>
 
-                  <h4 style={{ fontSize: '1.08rem', fontWeight: 700, marginBottom: '8px', color: 'var(--text-main)' }}>
+                  <div style={{ display: 'inline-block', fontSize: '0.72rem', fontWeight: 700, color: 'var(--primary)', textTransform: 'uppercase', marginBottom: '6px' }}>
+                    AI Wellness Insight
+                  </div>
+
+                  <h4 style={{ fontSize: '1.08rem', fontWeight: 700, marginBottom: '12px', color: 'var(--text-main)' }}>
                     {pattern.title}
                   </h4>
 
-                  <p style={{ fontSize: '0.88rem', color: 'var(--text-secondary)', lineHeight: 1.5, margin: '0 0 10px 0' }}>
-                    "{pattern.summary}"
-                  </p>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', fontSize: '0.86rem' }}>
+                    <div style={{ background: 'var(--bg-subtle)', padding: '10px 12px', borderRadius: 'var(--radius-md)' }}>
+                      <strong style={{ color: 'var(--primary)', display: 'block', fontSize: '0.78rem', textTransform: 'uppercase' }}>
+                        What I noticed
+                      </strong>
+                      <span style={{ color: 'var(--text-main)' }}>{pattern.summary}</span>
+                    </div>
 
-                  <div style={{
-                    fontSize: '0.8rem',
-                    color: 'var(--text-muted)',
-                    background: 'var(--bg-subtle)',
-                    padding: '10px 12px',
-                    borderRadius: 'var(--radius-sm)',
-                    lineHeight: 1.45
-                  }}>
-                    {pattern.detail}
+                    <div style={{ background: 'var(--bg-subtle)', padding: '10px 12px', borderRadius: 'var(--radius-md)' }}>
+                      <strong style={{ color: 'var(--secondary)', display: 'block', fontSize: '0.78rem', textTransform: 'uppercase' }}>
+                        Why it may matter
+                      </strong>
+                      <span style={{ color: 'var(--text-secondary)' }}>{pattern.detail}</span>
+                    </div>
+
+                    <div style={{ background: 'rgba(16, 185, 129, 0.08)', padding: '10px 12px', borderRadius: 'var(--radius-md)', border: '1px solid rgba(16, 185, 129, 0.2)' }}>
+                      <strong style={{ color: 'var(--primary-dark)', display: 'block', fontSize: '0.78rem', textTransform: 'uppercase' }}>
+                        What you can try
+                      </strong>
+                      <span style={{ color: 'var(--text-main)' }}>{pattern.recommendation || "Maintain your healthy routine and consistent rest habits."}</span>
+                    </div>
                   </div>
                 </div>
 

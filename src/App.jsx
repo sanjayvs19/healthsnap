@@ -15,6 +15,9 @@ import AIInsightsView from './components/insights/AIInsightsView';
 import GuidanceView from './components/guidance/GuidanceView';
 import TrendsView from './components/trends/TrendsView';
 import ProfileView from './components/profile/ProfileView';
+import ReportsView from './components/reports/ReportsView';
+import TrackView from './components/track/TrackView';
+import ProgressView from './components/progress/ProgressView';
 
 import { Sparkles, CheckCircle2 } from 'lucide-react';
 
@@ -36,6 +39,12 @@ function AppContent() {
     switch (activeView) {
       case 'dashboard':
         return <DashboardView />;
+      case 'track':
+        return <TrackView />;
+      case 'progress':
+        return <ProgressView />;
+      case 'reports':
+        return <ReportsView />;
       case 'snap':
         return <SnapFoodView />;
       case 'speak':

@@ -1,157 +1,143 @@
 import React from 'react';
 import { useWellness } from '../../context/WellnessContext';
 import {
-  LayoutDashboard,
-  Camera,
-  Mic,
-  FileEdit,
-  Activity,
-  Moon,
-  Sparkles,
-  Compass,
-  LineChart,
+  Home,
+  ClipboardList,
+  BarChart3,
+  DownloadCloud,
   User,
-  ShieldCheck
+  ShieldCheck,
+  Sparkles
 } from 'lucide-react';
 
 export default function Sidebar() {
-  const { activeView, setActiveView, wellnessScore } = useWellness();
+  const { activeView, setActiveView, wellnessScore, authMode } = useWellness();
 
   const navItems = [
-    { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
-    { id: 'snap', label: 'Snap Food', icon: Camera, badge: 'AI' },
-    { id: 'speak', label: 'Speak', icon: Mic, badge: 'Voice' },
-    { id: 'journal', label: 'Log Wellness', icon: FileEdit },
-    { id: 'activity', label: 'Activity', icon: Activity },
-    { id: 'sleep', label: 'Sleep', icon: Moon },
-    { id: 'insights', label: 'AI Insights', icon: Sparkles, badge: 'Core' },
-    { id: 'guidance', label: 'Guidance', icon: Compass },
-    { id: 'trends', label: 'Track & Trends', icon: LineChart },
-    { id: 'profile', label: 'Profile & Safety', icon: User }
+    { id: 'dashboard', label: 'Home', icon: Home },
+    { id: 'track', label: 'Track', icon: ClipboardList },
+    { id: 'progress', label: 'Progress', icon: BarChart3 },
+    { id: 'reports', label: 'Reports', icon: DownloadCloud },
+    { id: 'profile', label: 'Profile', icon: User }
   ];
+
+  // Map sub-views back to active main category
+  const getActiveTab = () => {
+    if (['dashboard'].includes(activeView)) return 'dashboard';
+    if (['track', 'snap', 'speak', 'journal', 'activity', 'sleep'].includes(activeView)) return 'track';
+    if (['progress', 'trends', 'insights'].includes(activeView)) return 'progress';
+    if (['reports'].includes(activeView)) return 'reports';
+    if (['profile'].includes(activeView)) return 'profile';
+    return 'dashboard';
+  };
+
+  const currentTab = getActiveTab();
 
   return (
     <aside style={{
-      width: '260px',
+      width: '250px',
       background: 'var(--bg-surface)',
       borderRight: '1px solid var(--border-subtle)',
       display: 'flex',
       flexDirection: 'column',
       justifyContent: 'space-between',
-      padding: '20px 14px',
+      padding: '24px 16px',
       flexShrink: 0,
       minHeight: 'calc(100vh - 70px)'
     }}>
       {/* Navigation List */}
-      <nav style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
+      <div>
         <div style={{
-          fontSize: '0.72rem',
+          fontSize: '0.75rem',
           fontWeight: 700,
           color: 'var(--text-muted)',
           textTransform: 'uppercase',
           letterSpacing: '0.08em',
-          padding: '8px 12px 4px'
+          padding: '0 14px 12px'
         }}>
-          Menu
+          Navigation
         </div>
 
-        {navItems.map((item) => {
-          const Icon = item.icon;
-          const isActive = activeView === item.id;
+        <nav style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+          {navItems.map((item) => {
+            const Icon = item.icon;
+            const isActive = currentTab === item.id;
 
-          return (
-            <button
-              key={item.id}
-              onClick={() => setActiveView(item.id)}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                padding: '10px 14px',
-                borderRadius: 'var(--radius-md)',
-                fontSize: '0.9rem',
-                fontWeight: isActive ? 600 : 500,
-                color: isActive ? 'var(--primary)' : 'var(--text-secondary)',
-                background: isActive ? 'rgba(16, 185, 129, 0.1)' : 'transparent',
-                border: isActive ? '1px solid rgba(16, 185, 129, 0.25)' : '1px solid transparent',
-                transition: 'all var(--transition-fast)'
-              }}
-              onMouseEnter={(e) => {
-                if (!isActive) e.currentTarget.style.background = 'var(--bg-subtle)';
-              }}
-              onMouseLeave={(e) => {
-                if (!isActive) e.currentTarget.style.background = 'transparent';
-              }}
-            >
-              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            return (
+              <button
+                key={item.id}
+                onClick={() => setActiveView(item.id)}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '14px',
+                  padding: '12px 16px',
+                  borderRadius: 'var(--radius-lg)',
+                  fontSize: '0.98rem',
+                  fontWeight: isActive ? 700 : 500,
+                  color: isActive ? '#ffffff' : 'var(--text-main)',
+                  background: isActive ? 'var(--primary)' : 'transparent',
+                  boxShadow: isActive ? '0 4px 12px rgba(16, 185, 129, 0.3)' : 'none',
+                  border: 'none',
+                  transition: 'all var(--transition-fast)',
+                  cursor: 'pointer',
+                  textAlign: 'left',
+                  width: '100%'
+                }}
+                onMouseEnter={(e) => {
+                  if (!isActive) {
+                    e.currentTarget.style.background = 'var(--bg-subtle)';
+                    e.currentTarget.style.color = 'var(--primary)';
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (!isActive) {
+                    e.currentTarget.style.background = 'transparent';
+                    e.currentTarget.style.color = 'var(--text-main)';
+                  }
+                }}
+              >
                 <Icon
-                  size={19}
-                  color={isActive ? 'var(--primary)' : 'currentColor'}
-                  strokeWidth={isActive ? 2.4 : 1.8}
+                  size={20}
+                  color={isActive ? '#ffffff' : 'currentColor'}
+                  strokeWidth={isActive ? 2.5 : 2}
                 />
                 <span>{item.label}</span>
-              </div>
+              </button>
+            );
+          })}
+        </nav>
+      </div>
 
-              {item.badge && (
-                <span style={{
-                  fontSize: '0.65rem',
-                  fontWeight: 700,
-                  padding: '2px 6px',
-                  borderRadius: '999px',
-                  background: isActive ? 'var(--primary)' : 'var(--bg-subtle)',
-                  color: isActive ? '#fff' : 'var(--text-muted)'
-                }}>
-                  {item.badge}
-                </span>
-              )}
-            </button>
-          );
-        })}
-      </nav>
-
-      {/* Sidebar Footer Widget */}
+      {/* Sidebar Footer Widget: Clean, un-cluttered */}
       <div style={{
-        marginTop: '20px',
-        padding: '14px',
-        background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.08) 0%, rgba(6, 182, 212, 0.08) 100%)',
-        border: '1px solid rgba(16, 185, 129, 0.2)',
-        borderRadius: 'var(--radius-md)'
+        padding: '16px',
+        background: 'var(--bg-subtle)',
+        border: '1px solid var(--border-subtle)',
+        borderRadius: 'var(--radius-lg)',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '8px'
       }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
-          <span style={{ fontSize: '0.78rem', fontWeight: 600, color: 'var(--text-secondary)' }}>
-            Wellness Score
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <span style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-secondary)' }}>
+            Session
           </span>
           <span style={{
-            fontSize: '0.75rem',
+            fontSize: '0.72rem',
             fontWeight: 700,
-            color: 'var(--primary)',
-            background: 'rgba(16, 185, 129, 0.15)',
-            padding: '1px 6px',
+            color: authMode === 'backend' ? 'var(--primary)' : '#d97706',
+            background: authMode === 'backend' ? 'rgba(16, 185, 129, 0.15)' : 'rgba(245, 158, 11, 0.15)',
+            padding: '2px 8px',
             borderRadius: '999px'
           }}>
-            {wellnessScore.score}/100
+            {authMode === 'backend' ? 'Real Account' : 'Demo Mode'}
           </span>
         </div>
 
-        <div style={{
-          height: '6px',
-          background: 'var(--bg-subtle)',
-          borderRadius: '999px',
-          overflow: 'hidden',
-          marginBottom: '8px'
-        }}>
-          <div style={{
-            width: `${wellnessScore.score}%`,
-            height: '100%',
-            background: 'linear-gradient(90deg, var(--primary) 0%, #06b6d4 100%)',
-            borderRadius: '999px',
-            transition: 'width 0.8s ease'
-          }} />
-        </div>
-
-        <div style={{ display: 'flex', alignItems: 'center', gap: '5px', fontSize: '0.72rem', color: 'var(--text-muted)' }}>
-          <ShieldCheck size={13} color="var(--primary)" />
-          <span>Non-diagnostic awareness</span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.74rem', color: 'var(--text-muted)' }}>
+          <ShieldCheck size={14} color="var(--primary)" />
+          <span>General wellness only</span>
         </div>
       </div>
     </aside>

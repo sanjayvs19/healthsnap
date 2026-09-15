@@ -21,7 +21,8 @@ export default function Header({ onMobileMenuToggle }) {
     toggleTheme,
     activeView,
     setActiveView,
-    setIsAuth
+    setIsAuth,
+    authMode
   } = useWellness();
 
   const [notifOpen, setNotifOpen] = useState(false);
@@ -227,8 +228,8 @@ export default function Header({ onMobileMenuToggle }) {
               <div style={{ fontSize: '0.82rem', fontWeight: 600, color: 'var(--text-main)' }}>
                 {user.name.split(' ')[0]}
               </div>
-              <div style={{ fontSize: '0.68rem', color: 'var(--text-muted)' }}>
-                Demo User
+              <div style={{ fontSize: '0.68rem', color: authMode === 'backend' ? 'var(--primary)' : 'var(--text-muted)', fontWeight: 600 }}>
+                {authMode === 'backend' ? 'Verified Account' : 'Demo User'}
               </div>
             </div>
             <ChevronDown size={14} color="var(--text-muted)" />

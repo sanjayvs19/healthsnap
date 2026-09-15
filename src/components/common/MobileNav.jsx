@@ -1,17 +1,29 @@
 import React from 'react';
 import { useWellness } from '../../context/WellnessContext';
-import { LayoutDashboard, Camera, Mic, LineChart, User } from 'lucide-react';
+import { Home, ClipboardList, BarChart3, DownloadCloud, User } from 'lucide-react';
 
 export default function MobileNav() {
   const { activeView, setActiveView } = useWellness();
 
   const mobileItems = [
-    { id: 'dashboard', label: 'Home', icon: LayoutDashboard },
-    { id: 'snap', label: 'Snap', icon: Camera },
-    { id: 'speak', label: 'Speak', icon: Mic },
-    { id: 'trends', label: 'Track', icon: LineChart },
+    { id: 'dashboard', label: 'Home', icon: Home },
+    { id: 'track', label: 'Track', icon: ClipboardList },
+    { id: 'progress', label: 'Progress', icon: BarChart3 },
+    { id: 'reports', label: 'Reports', icon: DownloadCloud },
     { id: 'profile', label: 'Profile', icon: User }
   ];
+
+  // Map sub-views back to active main category
+  const getActiveTab = () => {
+    if (['dashboard'].includes(activeView)) return 'dashboard';
+    if (['track', 'snap', 'speak', 'journal', 'activity', 'sleep'].includes(activeView)) return 'track';
+    if (['progress', 'trends', 'insights'].includes(activeView)) return 'progress';
+    if (['reports'].includes(activeView)) return 'reports';
+    if (['profile'].includes(activeView)) return 'profile';
+    return 'dashboard';
+  };
+
+  const currentTab = getActiveTab();
 
   return (
     <nav style={{
@@ -19,7 +31,7 @@ export default function MobileNav() {
       bottom: 0,
       left: 0,
       right: 0,
-      height: '64px',
+      height: '68px',
       background: 'var(--bg-glass)',
       backdropFilter: 'blur(16px)',
       WebkitBackdropFilter: 'blur(16px)',
@@ -28,11 +40,12 @@ export default function MobileNav() {
       alignItems: 'center',
       justifyContent: 'space-around',
       zIndex: 50,
-      padding: '0 8px'
+      padding: '0 4px',
+      boxShadow: '0 -2px 10px rgba(0, 0, 0, 0.05)'
     }} className="mobile-only-nav">
       {mobileItems.map((item) => {
         const Icon = item.icon;
-        const isActive = activeView === item.id;
+        const isActive = currentTab === item.id;
 
         return (
           <button
@@ -44,31 +57,33 @@ export default function MobileNav() {
               alignItems: 'center',
               justifyContent: 'center',
               gap: '4px',
-              padding: '6px 12px',
+              padding: '8px 10px',
+              minWidth: '56px',
+              minHeight: '48px',
               color: isActive ? 'var(--primary)' : 'var(--text-muted)',
+              border: 'none',
+              background: 'transparent',
+              cursor: 'pointer',
               position: 'relative'
             }}
           >
-            {item.id === 'snap' ? (
-              <div style={{
-                width: '38px',
-                height: '38px',
-                borderRadius: '50%',
-                background: isActive ? 'var(--primary)' : 'var(--bg-subtle)',
-                color: isActive ? '#fff' : 'var(--text-main)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                boxShadow: isActive ? 'var(--shadow-glow-primary)' : 'none',
-                marginTop: '-12px',
-                border: '2px solid var(--bg-surface)'
-              }}>
-                <Icon size={20} strokeWidth={2.2} />
-              </div>
-            ) : (
-              <Icon size={20} strokeWidth={isActive ? 2.4 : 1.8} />
-            )}
-            <span style={{ fontSize: '0.7rem', fontWeight: isActive ? 600 : 400 }}>
+            <div style={{
+              width: '32px',
+              height: '32px',
+              borderRadius: '8px',
+              background: isActive ? 'rgba(16, 185, 129, 0.12)' : 'transparent',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              transition: 'all 0.15s ease'
+            }}>
+              <Icon size={20} strokeWidth={isActive ? 2.5 : 1.8} />
+            </div>
+            <span style={{
+              fontSize: '0.74rem',
+              fontWeight: isActive ? 700 : 500,
+              color: isActive ? 'var(--primary)' : 'var(--text-secondary)'
+            }}>
               {item.label}
             </span>
           </button>
@@ -76,7 +91,7 @@ export default function MobileNav() {
       })}
 
       <style>{`
-        @media (min-width: 900px) {
+        @media (min-width: 901px) {
           .mobile-only-nav {
             display: none !important;
           }

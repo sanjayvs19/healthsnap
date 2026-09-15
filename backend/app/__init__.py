@@ -1,0 +1,1 @@
+"""HealthSnap FastAPI Application Package"""

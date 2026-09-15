@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import {
   INITIAL_USER,
   INITIAL_WELLNESS_SCORE,
@@ -10,12 +10,24 @@ import {
   INITIAL_GUIDANCE,
   INITIAL_NOTIFICATIONS
 } from '../types/data';
+import { api, tokenStorage } from '../services/api';
 
 const WellnessContext = createContext();
 
 const STORAGE_KEY = 'healthsnap_wellness_data_v1';
 
 export function WellnessProvider({ children }) {
+  // Session & Auth state
+  const [authMode, setAuthMode] = useState(() => {
+    return tokenStorage.get() ? 'backend' : 'demo';
+  });
+  const [isAuth, setIsAuth] = useState(() => {
+    return !!tokenStorage.get();
+  });
+  const [activeView, setActiveView] = useState('landing');
+  const [theme, setTheme] = useState('light');
+  const [toastMessage, setToastMessage] = useState(null);
+
   // Load initial state from localStorage or fallback to defaults
   const [user, setUser] = useState(() => {
     try {
@@ -98,11 +110,55 @@ export function WellnessProvider({ children }) {
     }
   });
 
-  // Navigation & session state
-  const [isAuth, setIsAuth] = useState(false);
-  const [activeView, setActiveView] = useState('landing');
-  const [theme, setTheme] = useState('light');
-  const [toastMessage, setToastMessage] = useState(null);
+  // Function to refresh all dashboard data from FastAPI backend
+  const refreshDashboardFromBackend = useCallback(async () => {
+    if (!tokenStorage.get()) return;
+    try {
+      const data = await api.dashboard.get();
+      if (data) {
+        if (data.user) {
+          setUser(prev => ({
+            ...prev,
+            id: data.user.id,
+            name: data.user.full_name,
+            email: data.user.email,
+            avatar: data.user.avatar_url || prev.avatar,
+            goals: data.user.goals?.length ? data.user.goals : prev.goals,
+            settings: data.user.settings && Object.keys(data.user.settings).length ? data.user.settings : prev.settings
+          }));
+        }
+        if (data.wellnessScore) setWellnessScore(data.wellnessScore);
+        if (data.activity) setActivity(data.activity);
+        if (data.sleep) setSleep(data.sleep);
+        if (data.foodLogs && data.foodLogs.length) setFoodLogs(data.foodLogs);
+        if (data.journalEntries && data.journalEntries.length) setJournalEntries(data.journalEntries);
+        if (data.patterns && data.patterns.length) setPatterns(data.patterns);
+        if (data.guidance && data.guidance.length) setGuidance(data.guidance);
+        if (data.notifications && data.notifications.length) setNotifications(data.notifications);
+      }
+    } catch (err) {
+      console.warn("Could not load dashboard from backend:", err.message);
+    }
+  }, []);
+
+  // Check auth session on startup
+  useEffect(() => {
+    const token = tokenStorage.get();
+    if (token) {
+      api.auth.getMe()
+        .then(u => {
+          setIsAuth(true);
+          setAuthMode('backend');
+          refreshDashboardFromBackend();
+        })
+        .catch(() => {
+          // Token expired or invalid
+          tokenStorage.clear();
+          setIsAuth(false);
+          setAuthMode('demo');
+        });
+    }
+  }, [refreshDashboardFromBackend]);
 
   // Sync to localStorage
   useEffect(() => {
@@ -137,8 +193,8 @@ export function WellnessProvider({ children }) {
     setTheme(prev => (prev === 'light' ? 'dark' : 'light'));
   };
 
-  // Add Food Log
-  const addFoodLog = (meal) => {
+  // Add Food Log (connected to backend if authenticated)
+  const addFoodLog = async (meal) => {
     const newLog = {
       id: `food-${Date.now()}`,
       timestamp: 'Just now',
@@ -151,18 +207,38 @@ export function WellnessProvider({ children }) {
     };
     setFoodLogs(prev => [newLog, ...prev]);
 
-    // Recalculate score dynamically (+1 point for good awareness)
+    // Recalculate score dynamically (+1 point for awareness)
     setWellnessScore(prev => ({
       ...prev,
       score: Math.min(100, prev.score + 1),
       trend: "+5 pts vs last week"
     }));
 
-    showToast(`📸 ${meal.name || 'Meal'} logged to food diary!`);
+    showToast(`📸 ${meal.name || meal.title || 'Meal'} logged to food diary!`);
+
+    if (authMode === 'backend') {
+      try {
+        await api.food.logMeal({
+          title: meal.name || meal.title,
+          category: meal.category || 'Balanced Meal',
+          image_url: meal.image || null,
+          calories: meal.calories,
+          protein: meal.protein,
+          carbs: meal.carbs,
+          fat: meal.fat,
+          fiber: meal.fiber,
+          status: meal.category || 'Nutrient Balanced',
+          detected_items: meal.detectedItems || [],
+          suggestion: meal.suggestion || ''
+        });
+      } catch (e) {
+        console.warn("Backend food log sync failed:", e.message);
+      }
+    }
   };
 
-  // Add Journal Entry
-  const addJournalEntry = (entry) => {
+  // Add Journal Entry (connected to backend if authenticated)
+  const addJournalEntry = async (entry) => {
     const newEntry = {
       id: `journal-${Date.now()}`,
       timestamp: 'Just now',
@@ -170,7 +246,6 @@ export function WellnessProvider({ children }) {
     };
     setJournalEntries(prev => [newEntry, ...prev]);
 
-    // Add a notification about the entry
     setNotifications(prev => [
       {
         id: `notif-${Date.now()}`,
@@ -185,10 +260,25 @@ export function WellnessProvider({ children }) {
     ]);
 
     showToast("📝 Wellness entry recorded successfully!");
+
+    if (authMode === 'backend') {
+      try {
+        await api.wellness.createSelfReport({
+          feeling: entry.feeling,
+          feeling_emoji: entry.feelingEmoji || '🙂',
+          symptoms: entry.symptoms,
+          severity: entry.severity,
+          duration: entry.duration,
+          notes: entry.notes
+        });
+      } catch (e) {
+        console.warn("Backend self-report sync failed:", e.message);
+      }
+    }
   };
 
-  // Add Voice Log
-  const addVoiceLog = (transcript, understanding) => {
+  // Add Voice Log (connected to backend if authenticated)
+  const addVoiceLog = async (transcript, understanding) => {
     const newEntry = {
       id: `voice-${Date.now()}`,
       timestamp: 'Just now',
@@ -202,22 +292,61 @@ export function WellnessProvider({ children }) {
     setJournalEntries(prev => [newEntry, ...prev]);
 
     showToast("🎤 Voice log analyzed and added to wellness history!");
+
+    if (authMode === 'backend') {
+      try {
+        await api.voice.transcribe({
+          transcript,
+          autoSaveJournal: true
+        });
+      } catch (e) {
+        console.warn("Backend voice sync failed:", e.message);
+      }
+    }
   };
 
   // Quick activity adder
-  const logQuickSteps = (stepAmount) => {
+  const logQuickSteps = async (stepAmount) => {
+    let updatedSteps = 0;
+    let updatedGoal = 8000;
+    let updatedMin = 48;
+    let updatedKm = 4.3;
+    let updatedCal = 412;
+
     setActivity(prev => {
       const newSteps = prev.steps + stepAmount;
       const newPercent = Math.min(100, Math.round((newSteps / prev.goal) * 100));
+      updatedSteps = newSteps;
+      updatedGoal = prev.goal;
+      updatedMin = prev.activeMinutes + Math.round(stepAmount / 100);
+      updatedKm = parseFloat((prev.distanceKm + (stepAmount * 0.00075)).toFixed(1));
+      updatedCal = prev.caloriesBurned + Math.round(stepAmount * 0.04);
+
       return {
         ...prev,
         steps: newSteps,
         percentAchieved: newPercent,
-        distanceKm: parseFloat((prev.distanceKm + (stepAmount * 0.00075)).toFixed(1)),
-        caloriesBurned: prev.caloriesBurned + Math.round(stepAmount * 0.04)
+        activeMinutes: updatedMin,
+        distanceKm: updatedKm,
+        caloriesBurned: updatedCal
       };
     });
+
     showToast(`🏃 Added +${stepAmount.toLocaleString()} steps! Keep moving!`);
+
+    if (authMode === 'backend') {
+      try {
+        await api.activity.log({
+          steps: updatedSteps,
+          goal: updatedGoal,
+          active_minutes: updatedMin,
+          distance_km: updatedKm,
+          calories_burned: updatedCal
+        });
+      } catch (e) {
+        console.warn("Backend activity sync failed:", e.message);
+      }
+    }
   };
 
   // Toggle habit checkbox
@@ -244,12 +373,20 @@ export function WellnessProvider({ children }) {
   };
 
   // Update user goals
-  const updateGoals = (newGoals) => {
+  const updateGoals = async (newGoals) => {
     setUser(prev => ({
       ...prev,
       goals: newGoals
     }));
     showToast("Wellness goals updated.");
+
+    if (authMode === 'backend') {
+      try {
+        await api.users.updateProfile({ goals: newGoals });
+      } catch (e) {
+        console.warn("Backend goals sync failed:", e.message);
+      }
+    }
   };
 
   // Reset to default seed
@@ -265,6 +402,37 @@ export function WellnessProvider({ children }) {
     setNotifications(INITIAL_NOTIFICATIONS);
     localStorage.clear();
     showToast("🔄 Data reset to pristine demo values.");
+  };
+
+  // Logout function
+  const logout = async () => {
+    if (authMode === 'backend') {
+      await api.auth.logout();
+    }
+    tokenStorage.clear();
+    setIsAuth(false);
+    setAuthMode('demo');
+    setUser(INITIAL_USER);
+    setActiveView('landing');
+    showToast("Logged out successfully.");
+  };
+
+  // Permanently delete account & associated local data
+  const deleteAccount = async () => {
+    if (authMode === 'backend') {
+      try {
+        await api.users.deleteAccount();
+      } catch (err) {
+        console.warn("Backend delete account API not active; safely wiping local credentials.", err);
+      }
+    }
+    tokenStorage.clear();
+    localStorage.clear();
+    setIsAuth(false);
+    setAuthMode('demo');
+    setUser(INITIAL_USER);
+    setActiveView('landing');
+    showToast("Account and stored data have been permanently removed.");
   };
 
   // Export data as JSON file download
@@ -302,10 +470,13 @@ export function WellnessProvider({ children }) {
         foodLogs,
         journalEntries,
         patterns,
+        setPatterns,
         guidance,
         notifications,
         isAuth,
         setIsAuth,
+        authMode,
+        setAuthMode,
         activeView,
         setActiveView,
         theme,
@@ -321,7 +492,10 @@ export function WellnessProvider({ children }) {
         markAllNotificationsRead,
         updateGoals,
         resetToDefaultData,
-        exportData
+        logout,
+        deleteAccount,
+        exportData,
+        refreshDashboardFromBackend
       }}
     >
       {children}

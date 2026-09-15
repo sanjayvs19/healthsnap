@@ -14,7 +14,8 @@ import {
   Share2,
   CheckCircle2,
   AlertTriangle,
-  FileSpreadsheet
+  FileSpreadsheet,
+  LogOut
 } from 'lucide-react';
 
 export default function ProfileView() {
@@ -25,7 +26,9 @@ export default function ProfileView() {
     theme,
     toggleTheme,
     exportData,
-    resetToDefaultData
+    resetToDefaultData,
+    logout,
+    authMode
   } = useWellness();
 
   const [confirmDelete, setConfirmDelete] = useState(false);
@@ -414,6 +417,26 @@ export default function ProfileView() {
 
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '14px' }}>
           <button
+            onClick={logout}
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '8px',
+              padding: '12px 20px',
+              borderRadius: 'var(--radius-md)',
+              background: 'linear-gradient(135deg, rgba(239, 68, 68, 0.15) 0%, rgba(244, 63, 94, 0.15) 100%)',
+              color: '#ef4444',
+              border: '1px solid rgba(239, 68, 68, 0.35)',
+              fontWeight: 700,
+              fontSize: '0.9rem',
+              cursor: 'pointer'
+            }}
+          >
+            <LogOut size={18} />
+            <span>Sign Out ({authMode === 'backend' ? 'Backend Session' : 'Demo Mode'})</span>
+          </button>
+
+          <button
             onClick={exportData}
             className="btn-secondary"
             style={{ padding: '12px 20px', fontSize: '0.9rem' }}
@@ -422,53 +445,93 @@ export default function ProfileView() {
             <span>Export My Wellness Data (JSON)</span>
           </button>
 
-          {!confirmDelete ? (
-            <button
-              onClick={() => setConfirmDelete(true)}
-              style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '8px',
-                padding: '12px 20px',
-                borderRadius: 'var(--radius-md)',
-                background: 'rgba(239, 68, 68, 0.1)',
-                color: '#ef4444',
-                border: '1px solid rgba(239, 68, 68, 0.3)',
-                fontWeight: 600,
-                fontSize: '0.9rem'
-              }}
-            >
-              <Trash2 size={18} />
-              <span>Delete / Reset My Data</span>
-            </button>
-          ) : (
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <button
-                onClick={() => {
-                  resetToDefaultData();
-                  setConfirmDelete(false);
-                }}
-                style={{
-                  padding: '12px 18px',
-                  borderRadius: 'var(--radius-md)',
-                  background: '#ef4444',
-                  color: '#fff',
-                  fontWeight: 700,
-                  fontSize: '0.88rem'
-                }}
-              >
-                Confirm Reset to Default Seed
-              </button>
-              <button
-                onClick={() => setConfirmDelete(false)}
-                className="btn-secondary"
-                style={{ padding: '12px 14px', fontSize: '0.88rem' }}
-              >
-                Cancel
-              </button>
-            </div>
-          )}
+          <button
+            onClick={() => setConfirmDelete(true)}
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '8px',
+              padding: '12px 20px',
+              borderRadius: 'var(--radius-md)',
+              background: 'rgba(239, 68, 68, 0.1)',
+              color: '#ef4444',
+              border: '1px solid rgba(239, 68, 68, 0.3)',
+              fontWeight: 600,
+              fontSize: '0.9rem',
+              cursor: 'pointer'
+            }}
+          >
+            <Trash2 size={18} />
+            <span>Delete Account</span>
+          </button>
         </div>
+
+        {/* Delete Account Confirmation Dialog */}
+        {confirmDelete && (
+          <div style={{
+            position: 'fixed',
+            inset: 0,
+            background: 'rgba(0, 0, 0, 0.65)',
+            backdropFilter: 'blur(8px)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 9999,
+            padding: '16px'
+          }}>
+            <div style={{
+              background: 'var(--bg-surface)',
+              borderRadius: 'var(--radius-xl)',
+              padding: '28px',
+              maxWidth: '440px',
+              width: '100%',
+              border: '1px solid var(--border-subtle)',
+              boxShadow: 'var(--shadow-xl)',
+              textAlign: 'center'
+            }}>
+              <div style={{
+                width: '48px',
+                height: '48px',
+                borderRadius: '50%',
+                background: 'rgba(239, 68, 68, 0.12)',
+                color: '#ef4444',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                margin: '0 auto 16px'
+              }}>
+                <Trash2 size={24} />
+              </div>
+
+              <h3 style={{ fontSize: '1.3rem', fontWeight: 800, marginBottom: '8px' }}>
+                Delete your HealthSnap account?
+              </h3>
+              <p style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', lineHeight: 1.5, marginBottom: '24px' }}>
+                This will permanently delete your account and associated data. This action cannot be undone.
+              </p>
+
+              <div style={{ display: 'flex', gap: '12px', justifyContent: 'center' }}>
+                <button
+                  onClick={() => setConfirmDelete(false)}
+                  className="btn-secondary"
+                  style={{ flex: 1, padding: '12px', fontSize: '0.9rem' }}
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={async () => {
+                    setConfirmDelete(false);
+                    await deleteAccount();
+                  }}
+                  className="btn-danger"
+                  style={{ flex: 1, padding: '12px', fontSize: '0.9rem' }}
+                >
+                  Delete Account
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

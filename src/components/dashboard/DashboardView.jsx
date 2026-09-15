@@ -3,19 +3,17 @@ import { useWellness } from '../../context/WellnessContext';
 import CircularProgress from '../common/CircularProgress';
 import DisclaimerBanner from '../common/DisclaimerBanner';
 import {
-  Activity as ActivityIcon,
-  Moon,
-  Utensils,
-  Smile,
   Camera,
   Mic,
-  FileEdit,
-  LineChart,
-  ArrowRight,
+  Smile,
+  Activity,
+  Moon,
+  Utensils,
   Sparkles,
+  ArrowRight,
   TrendingUp,
-  CheckCircle2,
-  Clock
+  Plus,
+  AlertCircle
 } from 'lucide-react';
 
 export default function DashboardView() {
@@ -26,467 +24,370 @@ export default function DashboardView() {
     sleep,
     foodLogs,
     journalEntries,
-    setActiveView
+    setActiveView,
+    authMode
   } = useWellness();
 
-  const quickActions = [
+  // Dynamic greeting based on current local hour
+  const getGreeting = () => {
+    const hour = new Date().getHours();
+    if (hour < 12) return 'Good morning';
+    if (hour < 17) return 'Good afternoon';
+    return 'Good evening';
+  };
+
+  const firstName = (user?.name || 'Friend').split(' ')[0];
+
+  // Check if real user has any data today
+  const todayStr = new Date().toISOString().slice(0, 10);
+  const todaysMeals = (foodLogs || []).filter(f => f.date === todayStr || !f.date);
+  const todaysCheckins = (journalEntries || []).filter(j => j.date === todayStr || !j.date);
+  const hasSteps = activity?.steps > 0;
+  const hasSleep = Boolean(sleep?.lastNightDuration && sleep.lastNightDuration !== 'Not recorded');
+
+  const hasAnyDataToday = hasSteps || hasSleep || todaysMeals.length > 0 || todaysCheckins.length > 0;
+
+  // 5 Large Action Cards requested
+  const actionCards = [
     {
       id: 'snap',
-      title: '📸 Snap Food',
-      subtitle: 'Analyze your meal',
-      desc: 'Capture food photo for instant nutrient awareness',
+      icon: Camera,
+      title: 'Snap Food',
+      desc: 'Take a photo of your meal',
       color: '#10b981',
-      bgGlow: 'rgba(16, 185, 129, 0.15)',
+      bg: 'rgba(16, 185, 129, 0.1)',
       target: 'snap'
     },
     {
       id: 'speak',
-      title: '🎤 Speak',
-      subtitle: 'Tell HealthSnap how you feel',
-      desc: 'Describe symptoms or state using voice AI',
+      icon: Mic,
+      title: 'Talk to HealthSnap',
+      desc: "Tell us how you're feeling",
       color: '#06b6d4',
-      bgGlow: 'rgba(6, 182, 212, 0.15)',
+      bg: 'rgba(6, 182, 212, 0.1)',
       target: 'speak'
     },
     {
       id: 'journal',
-      title: '📝 Log Wellness',
-      subtitle: 'Record symptoms or habits',
-      desc: 'Track energy levels, notes, and duration',
-      color: '#8b5cf6',
-      bgGlow: 'rgba(139, 92, 246, 0.15)',
+      icon: Smile,
+      title: 'Daily Check-in',
+      desc: 'Record how you feel today',
+      color: '#ec4899',
+      bg: 'rgba(236, 72, 153, 0.1)',
       target: 'journal'
     },
     {
-      id: 'trends',
-      title: '📊 View Progress',
-      subtitle: 'See your wellness trends',
-      desc: 'Explore 7-day, 30-day, and 3-month curves',
+      id: 'activity',
+      icon: Activity,
+      title: 'Activity',
+      desc: 'Track your movement',
       color: '#3b82f6',
-      bgGlow: 'rgba(59, 130, 246, 0.15)',
-      target: 'trends'
+      bg: 'rgba(59, 130, 246, 0.1)',
+      target: 'activity'
+    },
+    {
+      id: 'sleep',
+      icon: Moon,
+      title: 'Sleep',
+      desc: 'Track your sleep',
+      color: '#8b5cf6',
+      bg: 'rgba(139, 92, 246, 0.1)',
+      target: 'sleep'
     }
   ];
 
   return (
-    <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
-      {/* Non-clinical medical disclaimer */}
+    <div style={{ maxWidth: '1100px', margin: '0 auto' }}>
       <DisclaimerBanner compact={true} />
 
       {/* Greeting Banner */}
-      <div style={{
-        display: 'flex',
-        flexWrap: 'wrap',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        gap: '16px',
-        marginBottom: '28px'
-      }}>
-        <div>
-          <h1 style={{
-            fontSize: '2rem',
-            fontWeight: 800,
-            marginBottom: '4px',
-            letterSpacing: '-0.02em',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '8px'
-          }}>
-            <span>Good morning, {user.name.split(' ')[0]}! 👋</span>
-          </h1>
-          <p style={{ fontSize: '1rem', color: 'var(--text-secondary)', margin: 0 }}>
-            Let's check your wellness today and review your continuous signals.
-          </p>
+      <div style={{ marginBottom: '28px' }}>
+        <h1 style={{
+          fontSize: '2.2rem',
+          fontWeight: 800,
+          margin: '0 0 6px 0',
+          letterSpacing: '-0.02em',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '8px'
+        }}>
+          <span>{getGreeting()}, {firstName}! 👋</span>
+        </h1>
+        <p style={{ fontSize: '1.05rem', color: 'var(--text-secondary)', margin: 0, fontWeight: 500 }}>
+          Your Wellness Today
+        </p>
+      </div>
+
+      {/* 5 Large Action Cards */}
+      <div style={{ marginBottom: '36px' }}>
+        <div style={{
+          fontSize: '0.8rem',
+          fontWeight: 700,
+          color: 'var(--text-muted)',
+          textTransform: 'uppercase',
+          letterSpacing: '0.06em',
+          marginBottom: '14px'
+        }}>
+          Quick Actions
         </div>
 
-        {/* Quick Summary Pill */}
         <div style={{
-          display: 'inline-flex',
-          alignItems: 'center',
-          gap: '8px',
-          background: 'var(--bg-surface)',
-          border: '1px solid var(--border-subtle)',
-          padding: '8px 16px',
-          borderRadius: '999px',
-          boxShadow: 'var(--shadow-sm)'
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(190px, 1fr))',
+          gap: '14px'
         }}>
-          <Sparkles size={16} color="var(--primary)" />
-          <span style={{ fontSize: '0.84rem', fontWeight: 600 }}>
-            {journalEntries.length + foodLogs.length} signals integrated today
-          </span>
+          {actionCards.map((card) => {
+            const Icon = card.icon;
+            return (
+              <button
+                key={card.id}
+                onClick={() => setActiveView(card.target)}
+                className="action-card"
+                style={{
+                  minHeight: '130px',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  justifyContent: 'space-between',
+                  padding: '18px 20px',
+                  borderRadius: 'var(--radius-xl)'
+                }}
+              >
+                <div style={{
+                  width: '42px',
+                  height: '42px',
+                  borderRadius: '12px',
+                  background: card.bg,
+                  color: card.color,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  marginBottom: '12px'
+                }}>
+                  <Icon size={22} strokeWidth={2.2} />
+                </div>
+
+                <div>
+                  <div style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--text-main)', marginBottom: '2px' }}>
+                    {card.title}
+                  </div>
+                  <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', lineHeight: 1.3 }}>
+                    {card.desc}
+                  </div>
+                </div>
+              </button>
+            );
+          })}
         </div>
       </div>
 
-      {/* Main Grid: Wellness Score Hero & 4 Core Metric Cards */}
-      <div style={{
-        display: 'grid',
-        gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))',
-        gap: '24px',
-        marginBottom: '32px'
-      }}>
-        {/* Today's Wellness Score Hero Card */}
+      {/* Today Progress Section */}
+      <div style={{ marginBottom: '32px' }}>
         <div style={{
-          background: 'var(--bg-surface)',
-          border: '1px solid var(--border-subtle)',
-          borderRadius: 'var(--radius-xl)',
-          padding: '28px',
-          boxShadow: 'var(--shadow-md)',
           display: 'flex',
-          flexDirection: 'column',
           alignItems: 'center',
-          textAlign: 'center',
-          position: 'relative',
-          overflow: 'hidden'
+          justifyContent: 'space-between',
+          marginBottom: '14px'
         }}>
           <div style={{
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            right: 0,
-            height: '4px',
-            background: 'linear-gradient(90deg, var(--primary) 0%, #06b6d4 100%)'
-          }} />
-
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', marginBottom: '16px' }}>
-            <span style={{
-              fontSize: '0.78rem',
-              fontWeight: 700,
-              color: 'var(--primary)',
-              textTransform: 'uppercase',
-              letterSpacing: '0.05em'
-            }}>
-              Core Gauge
-            </span>
-            <span style={{
-              fontSize: '0.78rem',
-              color: 'var(--text-muted)',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '4px'
-            }}>
-              <TrendingUp size={14} color="var(--primary)" /> {wellnessScore.trend}
-            </span>
+            fontSize: '0.8rem',
+            fontWeight: 700,
+            color: 'var(--text-muted)',
+            textTransform: 'uppercase',
+            letterSpacing: '0.06em'
+          }}>
+            Today's Progress
           </div>
 
-          <h3 style={{ fontSize: '1.25rem', marginBottom: '20px' }}>
-            Today's Wellness Score
-          </h3>
-
-          <CircularProgress
-            score={wellnessScore.score}
-            max={wellnessScore.max}
-            size={180}
-            strokeWidth={12}
-            status={wellnessScore.status}
-          />
-
-          <p style={{
-            fontSize: '0.85rem',
-            color: 'var(--text-secondary)',
-            marginTop: '20px',
-            marginBottom: '16px',
-            lineHeight: 1.5
-          }}>
-            Overall index calculated from your activity, rest consistency, meal logs, and daily voice reflections.
-          </p>
-
           <button
-            onClick={() => setActiveView('insights')}
-            className="btn-outline-primary"
-            style={{ width: '100%', fontSize: '0.86rem', padding: '10px' }}
+            onClick={() => setActiveView('track')}
+            style={{ fontSize: '0.82rem', fontWeight: 600, color: 'var(--primary)', display: 'flex', alignItems: 'center', gap: '4px' }}
           >
-            <Sparkles size={16} />
-            <span>View AI Signal Breakdown</span>
+            <span>Open Track Hub</span>
+            <ArrowRight size={14} />
           </button>
         </div>
 
-        {/* 4 Core Cards Grid */}
-        <div style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
-          gap: '16px'
-        }}>
-          {/* Activity Card */}
-          <div
-            onClick={() => setActiveView('activity')}
-            style={{
-              background: 'var(--bg-surface)',
-              border: '1px solid var(--border-subtle)',
-              borderRadius: 'var(--radius-lg)',
-              padding: '20px',
-              cursor: 'pointer',
-              transition: 'all var(--transition-fast)'
-            }}
-            onMouseEnter={(e) => e.currentTarget.style.borderColor = 'var(--primary)'}
-            onMouseLeave={(e) => e.currentTarget.style.borderColor = 'var(--border-subtle)'}
-          >
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px' }}>
-              <div style={{
-                width: '38px',
-                height: '38px',
-                borderRadius: '12px',
-                background: 'rgba(16, 185, 129, 0.12)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                color: 'var(--primary)'
-              }}>
-                <ActivityIcon size={20} />
-              </div>
-              <span className="badge-tag badge-emerald">{activity.percentAchieved}%</span>
-            </div>
-            <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 600 }}>Activity</span>
-            <h4 style={{ fontSize: '1.4rem', fontWeight: 800, margin: '2px 0 4px' }}>
-              {activity.steps.toLocaleString()} steps
-            </h4>
-            <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)' }}>
-              Goal: {activity.goal.toLocaleString()} • {activity.distanceKm} km
-            </div>
-          </div>
-
-          {/* Sleep Card */}
-          <div
-            onClick={() => setActiveView('sleep')}
-            style={{
-              background: 'var(--bg-surface)',
-              border: '1px solid var(--border-subtle)',
-              borderRadius: 'var(--radius-lg)',
-              padding: '20px',
-              cursor: 'pointer',
-              transition: 'all var(--transition-fast)'
-            }}
-            onMouseEnter={(e) => e.currentTarget.style.borderColor = 'var(--secondary)'}
-            onMouseLeave={(e) => e.currentTarget.style.borderColor = 'var(--border-subtle)'}
-          >
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px' }}>
-              <div style={{
-                width: '38px',
-                height: '38px',
-                borderRadius: '12px',
-                background: 'rgba(6, 182, 212, 0.12)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                color: 'var(--secondary)'
-              }}>
-                <Moon size={20} />
-              </div>
-              <span className="badge-tag badge-blue">{sleep.quality}</span>
-            </div>
-            <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 600 }}>Sleep</span>
-            <h4 style={{ fontSize: '1.4rem', fontWeight: 800, margin: '2px 0 4px' }}>
-              {sleep.lastNightDuration}
-            </h4>
-            <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)' }}>
-              Target: {sleep.goalDuration}
-            </div>
-          </div>
-
-          {/* Food Card */}
-          <div
-            onClick={() => setActiveView('snap')}
-            style={{
-              background: 'var(--bg-surface)',
-              border: '1px solid var(--border-subtle)',
-              borderRadius: 'var(--radius-lg)',
-              padding: '20px',
-              cursor: 'pointer',
-              transition: 'all var(--transition-fast)'
-            }}
-            onMouseEnter={(e) => e.currentTarget.style.borderColor = '#8b5cf6'}
-            onMouseLeave={(e) => e.currentTarget.style.borderColor = 'var(--border-subtle)'}
-          >
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px' }}>
-              <div style={{
-                width: '38px',
-                height: '38px',
-                borderRadius: '12px',
-                background: 'rgba(139, 92, 246, 0.12)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                color: 'var(--accent-purple)'
-              }}>
-                <Utensils size={20} />
-              </div>
-              <span className="badge-tag badge-emerald">Balanced</span>
-            </div>
-            <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 600 }}>Food</span>
-            <h4 style={{ fontSize: '1.4rem', fontWeight: 800, margin: '2px 0 4px' }}>
-              Balanced
-            </h4>
-            <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)' }}>
-              {foodLogs.length} meals logged today
-            </div>
-          </div>
-
-          {/* Wellness Card */}
-          <div
-            onClick={() => setActiveView('journal')}
-            style={{
-              background: 'var(--bg-surface)',
-              border: '1px solid var(--border-subtle)',
-              borderRadius: 'var(--radius-lg)',
-              padding: '20px',
-              cursor: 'pointer',
-              transition: 'all var(--transition-fast)'
-            }}
-            onMouseEnter={(e) => e.currentTarget.style.borderColor = '#f59e0b'}
-            onMouseLeave={(e) => e.currentTarget.style.borderColor = 'var(--border-subtle)'}
-          >
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px' }}>
-              <div style={{
-                width: '38px',
-                height: '38px',
-                borderRadius: '12px',
-                background: 'rgba(245, 158, 11, 0.12)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                color: 'var(--accent-amber)'
-              }}>
-                <Smile size={20} />
-              </div>
-              <span className="badge-tag badge-amber">Good</span>
-            </div>
-            <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 600 }}>Wellness</span>
-            <h4 style={{ fontSize: '1.4rem', fontWeight: 800, margin: '2px 0 4px' }}>
-              Good
-            </h4>
-            <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)' }}>
-              Based on recent inputs
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Section 5: Quick Actions (Four Large Interactive Cards) */}
-      <div style={{ marginBottom: '36px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
-          <div>
-            <h3 style={{ fontSize: '1.3rem', fontWeight: 700 }}>Quick Actions</h3>
-            <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', margin: 0 }}>
-              Input daily signals or review your progress with a single tap
+        {/* If user has no data today */}
+        {!hasAnyDataToday && authMode === 'backend' ? (
+          <div className="empty-state-card">
+            <AlertCircle size={36} color="var(--text-muted)" style={{ margin: '0 auto 12px' }} />
+            <h3 style={{ fontSize: '1.2rem', fontWeight: 700, marginBottom: '6px' }}>
+              No data yet
+            </h3>
+            <p style={{ fontSize: '0.88rem', color: 'var(--text-secondary)', maxWidth: '420px', margin: '0 auto 20px' }}>
+              You haven't logged any movement, sleep, meals, or check-ins today. Start tracking to build your personal wellness profile.
             </p>
+            <button
+              onClick={() => setActiveView('track')}
+              className="btn-primary"
+              style={{ padding: '10px 22px' }}
+            >
+              <Plus size={16} />
+              <span>Start Tracking</span>
+            </button>
           </div>
-        </div>
-
-        <div style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))',
-          gap: '16px'
-        }}>
-          {quickActions.map((action) => (
+        ) : (
+          /* Grid of Today's actual metrics */
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
+            gap: '16px'
+          }}>
+            {/* Steps Card */}
             <div
-              key={action.id}
-              onClick={() => setActiveView(action.target)}
+              onClick={() => setActiveView('activity')}
               style={{
                 background: 'var(--bg-surface)',
                 border: '1px solid var(--border-subtle)',
                 borderRadius: 'var(--radius-lg)',
-                padding: '22px',
+                padding: '20px',
                 cursor: 'pointer',
-                transition: 'all var(--transition-normal)',
-                display: 'flex',
-                flexDirection: 'column',
-                justifyContent: 'space-between'
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.transform = 'translateY(-3px)';
-                e.currentTarget.style.borderColor = action.color;
-                e.currentTarget.style.boxShadow = `0 10px 20px -5px ${action.bgGlow}`;
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.transform = 'translateY(0)';
-                e.currentTarget.style.borderColor = 'var(--border-subtle)';
-                e.currentTarget.style.boxShadow = 'none';
+                transition: 'all var(--transition-fast)'
               }}
             >
-              <div>
-                <h4 style={{ fontSize: '1.15rem', fontWeight: 700, marginBottom: '4px' }}>
-                  {action.title}
-                </h4>
-                <div style={{ fontSize: '0.88rem', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '8px' }}>
-                  "{action.subtitle}"
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <Activity size={18} color="var(--primary)" />
+                  <span style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase' }}>Steps</span>
                 </div>
-                <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', margin: 0, lineHeight: 1.4 }}>
-                  {action.desc}
-                </p>
+                {activity?.percentAchieved && (
+                  <span className="badge-tag badge-emerald">{activity.percentAchieved}%</span>
+                )}
               </div>
-
-              <div style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '6px',
-                color: action.color,
-                fontWeight: 600,
-                fontSize: '0.82rem',
-                marginTop: '18px'
-              }}>
-                <span>Open {action.target}</span>
-                <ArrowRight size={15} />
+              <div style={{ fontSize: '1.6rem', fontWeight: 800, margin: '4px 0' }}>
+                {activity?.steps ? activity.steps.toLocaleString() : 'No data yet'}
+              </div>
+              <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)' }}>
+                Goal: {activity?.goal?.toLocaleString() || 8000} steps
               </div>
             </div>
-          ))}
-        </div>
+
+            {/* Sleep Card */}
+            <div
+              onClick={() => setActiveView('sleep')}
+              style={{
+                background: 'var(--bg-surface)',
+                border: '1px solid var(--border-subtle)',
+                borderRadius: 'var(--radius-lg)',
+                padding: '20px',
+                cursor: 'pointer',
+                transition: 'all var(--transition-fast)'
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <Moon size={18} color="#8b5cf6" />
+                  <span style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase' }}>Sleep</span>
+                </div>
+                {sleep?.quality && (
+                  <span className="badge-tag badge-blue">{sleep.quality}</span>
+                )}
+              </div>
+              <div style={{ fontSize: '1.6rem', fontWeight: 800, margin: '4px 0' }}>
+                {sleep?.lastNightDuration || 'No data yet'}
+              </div>
+              <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)' }}>
+                Target: 7–8 hours
+              </div>
+            </div>
+
+            {/* Meals Card */}
+            <div
+              onClick={() => setActiveView('snap')}
+              style={{
+                background: 'var(--bg-surface)',
+                border: '1px solid var(--border-subtle)',
+                borderRadius: 'var(--radius-lg)',
+                padding: '20px',
+                cursor: 'pointer',
+                transition: 'all var(--transition-fast)'
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <Utensils size={18} color="#f59e0b" />
+                  <span style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase' }}>Meals</span>
+                </div>
+                <span className="badge-tag badge-amber">{todaysMeals.length} logged</span>
+              </div>
+              <div style={{ fontSize: '1.6rem', fontWeight: 800, margin: '4px 0' }}>
+                {todaysMeals.length > 0 ? `${todaysMeals.length} Meals` : 'No data yet'}
+              </div>
+              <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)' }}>
+                {todaysMeals[0] ? `Latest: ${todaysMeals[0].name}` : 'Tap to log your food'}
+              </div>
+            </div>
+
+            {/* Daily Mood / Check-in */}
+            <div
+              onClick={() => setActiveView('journal')}
+              style={{
+                background: 'var(--bg-surface)',
+                border: '1px solid var(--border-subtle)',
+                borderRadius: 'var(--radius-lg)',
+                padding: '20px',
+                cursor: 'pointer',
+                transition: 'all var(--transition-fast)'
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <Smile size={18} color="#ec4899" />
+                  <span style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase' }}>Feeling</span>
+                </div>
+              </div>
+              <div style={{ fontSize: '1.6rem', fontWeight: 800, margin: '4px 0' }}>
+                {todaysCheckins[0] ? `${todaysCheckins[0].feeling} ${todaysCheckins[0].feelingEmoji || ''}` : 'No data yet'}
+              </div>
+              <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)' }}>
+                {todaysCheckins[0] ? (todaysCheckins[0].symptoms || 'Routine check-in') : 'Tap to record how you feel'}
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
-      {/* AI Wellness Observation of the Day & Live Synthesizer Hook */}
+      {/* Wellness Score Card */}
       <div style={{
-        background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.08) 0%, rgba(6, 182, 212, 0.08) 100%)',
-        border: '1px solid rgba(16, 185, 129, 0.25)',
+        background: 'var(--bg-surface)',
+        border: '1px solid var(--border-subtle)',
         borderRadius: 'var(--radius-xl)',
-        padding: '24px',
+        padding: '24px 28px',
         display: 'flex',
         flexWrap: 'wrap',
         alignItems: 'center',
         justifyContent: 'space-between',
-        gap: '20px'
+        gap: '20px',
+        boxShadow: 'var(--shadow-sm)'
       }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '16px', maxWidth: '750px' }}>
-          <div style={{
-            width: '48px',
-            height: '48px',
-            borderRadius: '16px',
-            background: 'var(--primary)',
-            color: '#fff',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            flexShrink: 0
-          }}>
-            <Sparkles size={24} />
-          </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
+          <CircularProgress
+            score={wellnessScore?.score || 78}
+            max={wellnessScore?.max || 100}
+            size={90}
+            strokeWidth={8}
+            status={wellnessScore?.status || 'Good'}
+          />
           <div>
-            <div style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '8px',
-              fontSize: '0.75rem',
-              fontWeight: 700,
-              color: 'var(--primary)',
-              textTransform: 'uppercase'
-            }}>
-              <span>Live AI Pattern Observation</span>
-              <span>•</span>
-              <span>Sleep + Activity</span>
+            <div style={{ fontSize: '0.78rem', fontWeight: 700, color: 'var(--primary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+              Overall Wellness Index
             </div>
-            <h4 style={{ fontSize: '1.05rem', margin: '4px 0 4px' }}>
-              Your activity has been lower on days when your sleep duration is below your usual level.
-            </h4>
+            <h3 style={{ fontSize: '1.3rem', fontWeight: 800, margin: '2px 0 4px 0' }}>
+              {wellnessScore?.score || 78}/100 &bull; {wellnessScore?.status || 'Good'}
+            </h3>
             <p style={{ fontSize: '0.84rem', color: 'var(--text-secondary)', margin: 0 }}>
-              On nights under 6.5 hours of rest, next-day active minutes drop by 22%. Consider winding down 30 minutes earlier.
+              Synthesized from your activity, rest consistency, and logged entries.
             </p>
           </div>
         </div>
 
         <button
           onClick={() => setActiveView('insights')}
-          className="btn-primary"
-          style={{ padding: '10px 20px', fontSize: '0.88rem' }}
+          className="btn-outline-primary"
+          style={{ padding: '10px 18px', fontSize: '0.86rem' }}
         >
-          <span>Explore All Patterns</span>
-          <ArrowRight size={16} />
+          <Sparkles size={16} />
+          <span>View AI Insights</span>
         </button>
       </div>
     </div>
