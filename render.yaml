@@ -1,0 +1,38 @@
+services:
+  # ── Backend (FastAPI) ──────────────────────────────────────────────────────
+  - type: web
+    name: healthsnap-api
+    runtime: python
+    rootDir: backend
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    # Persistent disk so SQLite data survives redeploys
+    disk:
+      name: healthsnap-db
+      mountPath: /data
+      sizeGB: 1
+    envVars:
+      - key: DATABASE_URL
+        value: sqlite:////data/healthsnap.db        # absolute path on the disk
+      - key: SECRET_KEY
+        generateValue: true                          # Render auto-generates a secure secret
+      - key: ALGORITHM
+        value: HS256
+      - key: ACCESS_TOKEN_EXPIRE_MINUTES
+        value: 1440
+      # Allow requests from the deployed frontend (update if your frontend URL changes)
+      - key: FRONTEND_CORS_ORIGINS
+        value: '["https://healthsnap-8l0v.onrender.com","http://localhost:5173","http://localhost:3000"]'
+
+  # ── Frontend (Vite / React — Static Site) ─────────────────────────────────
+  - type: static
+    name: healthsnap-frontend
+    buildCommand: npm install && npm run build
+    staticPublishPath: dist
+    envVars:
+      # Automatically set to the backend service's public URL at build time
+      - key: VITE_API_URL
+        fromService:
+          name: healthsnap-api
+          type: web
+          property: url

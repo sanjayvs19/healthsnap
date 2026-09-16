@@ -14,13 +14,13 @@ class Settings:
     
     @property
     def CORS_ORIGINS(self) -> List[str]:
-        raw = os.getenv("FRONTEND_CORS_ORIGINS", os.getenv("CORS_ORIGINS", '["http://localhost:3000","http://127.0.0.1:3000"]'))
+        raw = os.getenv("FRONTEND_CORS_ORIGINS", os.getenv("CORS_ORIGINS", '["https://healthsnap-8l0v.onrender.com","http://localhost:5173","http://localhost:3000","http://127.0.0.1:3000"]'))
         try:
             if raw.startswith("["):
                 return json.loads(raw)
             return [o.strip() for o in raw.split(",") if o.strip()]
         except Exception:
-            return ["http://localhost:3000", "http://127.0.0.1:3000"]
+            return ["https://healthsnap-8l0v.onrender.com", "http://localhost:5173", "http://localhost:3000", "http://127.0.0.1:3000"]
 
 settings = Settings()
 

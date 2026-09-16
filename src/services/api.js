@@ -3,7 +3,7 @@
  * Connects the React frontend to the FastAPI backend with JWT Bearer authentication.
  */
 
-const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+const BASE_URL = (import.meta.env.VITE_API_URL || 'http://localhost:8000').replace(/\/$/, '');
 
 const TOKEN_KEY = 'healthsnap_jwt_token';
 
