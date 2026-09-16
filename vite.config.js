@@ -17,6 +17,6 @@ export default defineConfig({
   preview: {
     host: '0.0.0.0',
     port: Number(process.env.PORT) || 4173,
-    allowedHosts: ['https://healthsnap-5.onrender.com']
+    allowedHosts: ['healthsnap-5.onrender.com', 'healthsnap-ten.vercel.app']
   }
 })
