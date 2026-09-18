@@ -3,7 +3,19 @@
  * Connects the React frontend to the FastAPI backend with JWT Bearer authentication.
  */
 
-const BASE_URL = (import.meta.env.VITE_API_URL || 'http://localhost:8000').replace(/\/$/, '');
+const DEPLOYED_BACKEND = 'https://healthsnap-6.onrender.com';
+
+// Pick the API base URL:
+// - Use the VITE_API_URL env value if it's a real (non-local) URL
+// - Otherwise, when hosted on Vercel/Render, use the deployed backend
+// - Local dev falls back to localhost:8000
+const envUrl = (import.meta.env.VITE_API_URL || '').trim().replace(/\/$/, '');
+const isLocalUrl = !envUrl || envUrl.includes('localhost') || envUrl.includes('127.0.0.1') || envUrl.includes('0.0.0.0');
+const isHostedDeploy =
+  typeof window !== 'undefined' &&
+  (window.location.hostname.endsWith('.vercel.app') || window.location.hostname.endsWith('.onrender.com'));
+
+const BASE_URL = !isLocalUrl ? envUrl : isHostedDeploy ? DEPLOYED_BACKEND : 'http://localhost:8000';
 
 const TOKEN_KEY = 'healthsnap_jwt_token';
 

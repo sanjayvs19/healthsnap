@@ -14,13 +14,25 @@ class Settings:
     
     @property
     def CORS_ORIGINS(self) -> List[str]:
-        raw = os.getenv("FRONTEND_CORS_ORIGINS", os.getenv("CORS_ORIGINS", '["https://healthsnap-ten.vercel.app","http://localhost:5173","http://127.0.0.1:5173","http://localhost:3000","http://127.0.0.1:3000"]'))
-        try:
-            if raw.startswith("["):
-                return json.loads(raw)
-            return [o.strip() for o in raw.split(",") if o.strip()]
-        except Exception:
-            return ["https://healthsnap-ten.vercel.app", "http://localhost:5173", "http://127.0.0.1:5173", "http://localhost:3000", "http://127.0.0.1:3000"]
+        # Always allow the deployed frontend(s) and local dev origins.
+        # FRONTEND_CORS_ORIGINS/CORS_ORIGINS env can add more.
+        origins = [
+            "https://healthsnap-omega.vercel.app",
+            "http://localhost:5173",
+            "http://127.0.0.1:5173",
+            "http://localhost:3000",
+            "http://127.0.0.1:3000",
+        ]
+        raw = os.getenv("FRONTEND_CORS_ORIGINS", os.getenv("CORS_ORIGINS", ""))
+        if raw:
+            try:
+                extra = json.loads(raw) if raw.startswith("[") else [o.strip() for o in raw.split(",") if o.strip()]
+                for origin in extra:
+                    if origin not in origins:
+                        origins.append(origin)
+            except Exception:
+                pass
+        return origins
 
 settings = Settings()
 
