@@ -80,6 +80,8 @@ export const api = {
     signup: (userData) => request('/api/auth/signup', { method: 'POST', body: userData }),
     login: (credentials) => request('/api/auth/login', { method: 'POST', body: credentials }),
     getMe: () => request('/api/auth/me', { method: 'GET' }),
+    forgotPassword: (email) => request('/api/auth/forgot-password', { method: 'POST', body: { email } }),
+    resetPassword: (data) => request('/api/auth/reset-password', { method: 'POST', body: data }),
     logout: () => {
       tokenStorage.clear();
       return request('/api/auth/logout', { method: 'POST' }).catch(() => null);

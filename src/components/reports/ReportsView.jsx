@@ -93,7 +93,7 @@ export default function ReportsView() {
 
     if (reportType === 'daily') {
       // Filter foods and check-ins for selected date
-      const dayMeals = (foodLogs || []).filter(f => f.date === selectedDate || (f.time && selectedDate === todayStr));
+      const dayMeals = (foodLogs || []).filter(f => f.date === selectedDate || ((f.time || f.timestamp) && selectedDate === todayStr));
       const dayCheckins = (journalEntries || []).filter(j => j.date === selectedDate || selectedDate === todayStr);
       const isToday = selectedDate === todayStr;
 
@@ -898,6 +898,10 @@ export default function ReportsView() {
                     </div>
                     {reportData.sleep?.recorded ? (
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', fontSize: '0.88rem' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 12px', background: 'var(--bg-subtle)', borderRadius: 'var(--radius-md)' }}>
+                          <span style={{ color: 'var(--text-secondary)' }}>Hours Slept</span>
+                          <strong style={{ color: '#8b5cf6' }}>{reportData.sleep.hours ? `${reportData.sleep.hours} hrs` : 'Not recorded'}</strong>
+                        </div>
                         <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                           <span style={{ color: 'var(--text-secondary)' }}>Duration</span>
                           <strong>{reportData.sleep.duration}</strong>
@@ -934,7 +938,7 @@ export default function ReportsView() {
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '14px' }}>
                         {reportData.food.meals.map((m, idx) => (
                           <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 12px', background: 'var(--bg-subtle)', borderRadius: 'var(--radius-md)', fontSize: '0.85rem' }}>
-                            <span><strong>{m.name}</strong> <span style={{ color: 'var(--text-muted)' }}>({m.time})</span></span>
+                            <span><strong>{m.name || m.title || 'Meal'}</strong> {m.time || m.timestamp ? <span style={{ color: 'var(--text-muted)' }}>({m.time || m.timestamp})</span> : null}</span>
                             <span>{m.calories} kcal &bull; P: {m.protein}g C: {m.carbs}g F: {m.fat}g</span>
                           </div>
                         ))}

@@ -1,20 +1,60 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import {
   INITIAL_USER,
+  EMPTY_USER,
   INITIAL_WELLNESS_SCORE,
+  EMPTY_WELLNESS_SCORE,
   INITIAL_ACTIVITY,
+  EMPTY_ACTIVITY,
   INITIAL_SLEEP,
+  EMPTY_SLEEP,
   INITIAL_FOOD_LOGS,
+  EMPTY_FOOD_LOGS,
   INITIAL_JOURNAL_ENTRIES,
+  EMPTY_JOURNAL_ENTRIES,
   INITIAL_PATTERNS,
+  EMPTY_PATTERNS,
   INITIAL_GUIDANCE,
-  INITIAL_NOTIFICATIONS
+  EMPTY_GUIDANCE,
+  INITIAL_NOTIFICATIONS,
+  EMPTY_NOTIFICATIONS
 } from '../types/data';
 import { api, tokenStorage } from '../services/api';
 
 const WellnessContext = createContext();
 
 const STORAGE_KEY = 'healthsnap_wellness_data_v1';
+const ACTIVE_USER_KEY = 'healthsnap_active_user_email';
+
+// Scoped storage: each account gets its own keys so users never see another account's data.
+const scopedKey = (suffix, email) => {
+  const e = (email || localStorage.getItem(ACTIVE_USER_KEY) || '')
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9_.@-]/g, '_');
+  return e ? `${STORAGE_KEY}_${e}_${suffix}` : `${STORAGE_KEY}_${suffix}`;
+};
+
+const loadState = (suffix, fallback) => {
+  try {
+    const saved = localStorage.getItem(scopedKey(suffix));
+    return saved ? JSON.parse(saved) : fallback;
+  } catch {
+    return fallback;
+  }
+};
+
+const dateKey = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+
+const timeToMinutes = (str) => {
+  const m = String(str || '').trim().match(/^(\d{1,2}):(\d{2})\s*(am|pm)$/i);
+  if (!m) return null;
+  let h = parseInt(m[1], 10);
+  const min = parseInt(m[2], 10);
+  if (h === 12) h = 0;
+  if (m[3].toLowerCase() === 'pm') h += 12;
+  return h * 60 + min;
+};
 
 export function WellnessProvider({ children }) {
   // Session & Auth state
@@ -28,87 +68,45 @@ export function WellnessProvider({ children }) {
   const [theme, setTheme] = useState('light');
   const [toastMessage, setToastMessage] = useState(null);
 
-  // Load initial state from localStorage or fallback to defaults
-  const [user, setUser] = useState(() => {
+  // Wake-up reminder state
+  const [wakeNotificationsEnabled, setWakeNotificationsEnabled] = useState(() => {
+    return localStorage.getItem('healthsnap_wakeup_enabled') !== 'false';
+  });
+  const [wakeReminderActive, setWakeReminderActive] = useState(false);
+  const [wakeReminderTime, setWakeReminderTime] = useState('');
+
+  // Wake-up history (one entry per day)
+  const [wakeHistory, setWakeHistory] = useState(() => {
     try {
-      const saved = localStorage.getItem(`${STORAGE_KEY}_user`);
-      return saved ? JSON.parse(saved) : INITIAL_USER;
+      const saved = localStorage.getItem('healthsnap_wakeup_logs');
+      return saved ? JSON.parse(saved) : [];
     } catch {
-      return INITIAL_USER;
+      return [];
     }
   });
 
-  const [wellnessScore, setWellnessScore] = useState(() => {
-    try {
-      const saved = localStorage.getItem(`${STORAGE_KEY}_score`);
-      return saved ? JSON.parse(saved) : INITIAL_WELLNESS_SCORE;
-    } catch {
-      return INITIAL_WELLNESS_SCORE;
-    }
-  });
+  // Load initial state from localStorage (scoped per active user) or fallback to defaults.
+  // A scoped session means a real account is active: fall back to EMPTY data so each
+  // email starts with its own clean slate instead of the shared demo seed.
+  const isScopedSession = () => !!localStorage.getItem(ACTIVE_USER_KEY);
 
-  const [activity, setActivity] = useState(() => {
-    try {
-      const saved = localStorage.getItem(`${STORAGE_KEY}_activity`);
-      return saved ? JSON.parse(saved) : INITIAL_ACTIVITY;
-    } catch {
-      return INITIAL_ACTIVITY;
-    }
-  });
+  const [user, setUser] = useState(() => loadState('user', isScopedSession() ? EMPTY_USER : INITIAL_USER));
 
-  const [sleep, setSleep] = useState(() => {
-    try {
-      const saved = localStorage.getItem(`${STORAGE_KEY}_sleep`);
-      return saved ? JSON.parse(saved) : INITIAL_SLEEP;
-    } catch {
-      return INITIAL_SLEEP;
-    }
-  });
+  const [wellnessScore, setWellnessScore] = useState(() => loadState('score', isScopedSession() ? EMPTY_WELLNESS_SCORE : INITIAL_WELLNESS_SCORE));
 
-  const [foodLogs, setFoodLogs] = useState(() => {
-    try {
-      const saved = localStorage.getItem(`${STORAGE_KEY}_food`);
-      return saved ? JSON.parse(saved) : INITIAL_FOOD_LOGS;
-    } catch {
-      return INITIAL_FOOD_LOGS;
-    }
-  });
+  const [activity, setActivity] = useState(() => loadState('activity', isScopedSession() ? EMPTY_ACTIVITY : INITIAL_ACTIVITY));
 
-  const [journalEntries, setJournalEntries] = useState(() => {
-    try {
-      const saved = localStorage.getItem(`${STORAGE_KEY}_journal`);
-      return saved ? JSON.parse(saved) : INITIAL_JOURNAL_ENTRIES;
-    } catch {
-      return INITIAL_JOURNAL_ENTRIES;
-    }
-  });
+  const [sleep, setSleep] = useState(() => loadState('sleep', isScopedSession() ? EMPTY_SLEEP : INITIAL_SLEEP));
 
-  const [patterns, setPatterns] = useState(() => {
-    try {
-      const saved = localStorage.getItem(`${STORAGE_KEY}_patterns`);
-      return saved ? JSON.parse(saved) : INITIAL_PATTERNS;
-    } catch {
-      return INITIAL_PATTERNS;
-    }
-  });
+  const [foodLogs, setFoodLogs] = useState(() => loadState('food', isScopedSession() ? EMPTY_FOOD_LOGS : INITIAL_FOOD_LOGS));
 
-  const [guidance, setGuidance] = useState(() => {
-    try {
-      const saved = localStorage.getItem(`${STORAGE_KEY}_guidance`);
-      return saved ? JSON.parse(saved) : INITIAL_GUIDANCE;
-    } catch {
-      return INITIAL_GUIDANCE;
-    }
-  });
+  const [journalEntries, setJournalEntries] = useState(() => loadState('journal', isScopedSession() ? EMPTY_JOURNAL_ENTRIES : INITIAL_JOURNAL_ENTRIES));
 
-  const [notifications, setNotifications] = useState(() => {
-    try {
-      const saved = localStorage.getItem(`${STORAGE_KEY}_notifications`);
-      return saved ? JSON.parse(saved) : INITIAL_NOTIFICATIONS;
-    } catch {
-      return INITIAL_NOTIFICATIONS;
-    }
-  });
+  const [patterns, setPatterns] = useState(() => loadState('patterns', isScopedSession() ? EMPTY_PATTERNS : INITIAL_PATTERNS));
+
+  const [guidance, setGuidance] = useState(() => loadState('guidance', isScopedSession() ? EMPTY_GUIDANCE : INITIAL_GUIDANCE));
+
+  const [notifications, setNotifications] = useState(() => loadState('notifications', isScopedSession() ? EMPTY_NOTIFICATIONS : INITIAL_NOTIFICATIONS));
 
   // Function to refresh all dashboard data from FastAPI backend
   const refreshDashboardFromBackend = useCallback(async () => {
@@ -144,34 +142,42 @@ export function WellnessProvider({ children }) {
   // Check auth session on startup
   useEffect(() => {
     const token = tokenStorage.get();
-    if (token) {
-      api.auth.getMe()
-        .then(u => {
-          setIsAuth(true);
-          setAuthMode('backend');
-          refreshDashboardFromBackend();
-        })
-        .catch(() => {
-          // Token expired or invalid
+    if (!token) return;
+    api.auth.getMe()
+      .then(u => {
+        setIsAuth(true);
+        setAuthMode('backend');
+        refreshDashboardFromBackend();
+      })
+      .catch(err => {
+        const status = err?.status;
+        if (status === 401 || status === 403) {
+          // Token genuinely invalid or expired
           tokenStorage.clear();
           setIsAuth(false);
           setAuthMode('demo');
-        });
-    }
+        } else {
+          // Backend unreachable or transient error: keep the session and use
+          // cached scoped data instead of logging the user out on reload.
+          console.warn("Backend unreachable on reload; staying signed in with cached data:", err.message);
+          setIsAuth(true);
+          setAuthMode('demo');
+        }
+      });
   }, [refreshDashboardFromBackend]);
 
-  // Sync to localStorage
+  // Sync to localStorage (scoped per active user)
   useEffect(() => {
     try {
-      localStorage.setItem(`${STORAGE_KEY}_user`, JSON.stringify(user));
-      localStorage.setItem(`${STORAGE_KEY}_score`, JSON.stringify(wellnessScore));
-      localStorage.setItem(`${STORAGE_KEY}_activity`, JSON.stringify(activity));
-      localStorage.setItem(`${STORAGE_KEY}_sleep`, JSON.stringify(sleep));
-      localStorage.setItem(`${STORAGE_KEY}_food`, JSON.stringify(foodLogs));
-      localStorage.setItem(`${STORAGE_KEY}_journal`, JSON.stringify(journalEntries));
-      localStorage.setItem(`${STORAGE_KEY}_patterns`, JSON.stringify(patterns));
-      localStorage.setItem(`${STORAGE_KEY}_guidance`, JSON.stringify(guidance));
-      localStorage.setItem(`${STORAGE_KEY}_notifications`, JSON.stringify(notifications));
+      localStorage.setItem(scopedKey('user'), JSON.stringify(user));
+      localStorage.setItem(scopedKey('score'), JSON.stringify(wellnessScore));
+      localStorage.setItem(scopedKey('activity'), JSON.stringify(activity));
+      localStorage.setItem(scopedKey('sleep'), JSON.stringify(sleep));
+      localStorage.setItem(scopedKey('food'), JSON.stringify(foodLogs));
+      localStorage.setItem(scopedKey('journal'), JSON.stringify(journalEntries));
+      localStorage.setItem(scopedKey('patterns'), JSON.stringify(patterns));
+      localStorage.setItem(scopedKey('guidance'), JSON.stringify(guidance));
+      localStorage.setItem(scopedKey('notifications'), JSON.stringify(notifications));
     } catch (e) {
       console.warn("Unable to save to localStorage:", e);
     }
@@ -181,6 +187,157 @@ export function WellnessProvider({ children }) {
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme);
   }, [theme]);
+
+  // Daily reset: at the start of each new day, clear daily metrics (steps, sleep,
+  // food, journal, score) so every day starts fresh. Scoped per account (and
+  // skipped for demo mode so the sample seed stays intact). Profile/goals persist.
+  const runDailyResetCheck = useCallback(() => {
+    if (authMode !== 'backend' || !user?.email) return;
+    const today = dateKey(new Date());
+    const lastReset = localStorage.getItem(scopedKey('lastResetDate', user.email)) || '';
+    if (lastReset === today) return;
+    localStorage.setItem(scopedKey('lastResetDate', user.email), today);
+    setActivity(EMPTY_ACTIVITY);
+    setSleep(EMPTY_SLEEP);
+    setFoodLogs(EMPTY_FOOD_LOGS);
+    setJournalEntries(EMPTY_JOURNAL_ENTRIES);
+    setWellnessScore(EMPTY_WELLNESS_SCORE);
+    setPatterns(EMPTY_PATTERNS);
+    setNotifications(EMPTY_NOTIFICATIONS);
+    showToast("🌅 New day! Daily metrics reset for a fresh start.");
+  }, [authMode, user?.email]);
+
+  // Run the daily reset on mount, whenever the active account changes (login), and
+  // periodically so an app left open across midnight also resets.
+  useEffect(() => {
+    runDailyResetCheck();
+  }, [runDailyResetCheck]);
+
+  useEffect(() => {
+    const interval = setInterval(runDailyResetCheck, 60000);
+    return () => clearInterval(interval);
+  }, [runDailyResetCheck]);
+
+  // Switch storage + state scope when a different account signs in.
+  // Each email loads only its own saved data; brand-new accounts start empty.
+  const switchUserScope = useCallback((email) => {
+    if (email) {
+      localStorage.setItem(ACTIVE_USER_KEY, email.trim().toLowerCase());
+    } else {
+      localStorage.removeItem(ACTIVE_USER_KEY);
+    }
+    setUser(loadState('user', EMPTY_USER));
+    setWellnessScore(loadState('score', EMPTY_WELLNESS_SCORE));
+    setActivity(loadState('activity', EMPTY_ACTIVITY));
+    setSleep(loadState('sleep', EMPTY_SLEEP));
+    setFoodLogs(loadState('food', EMPTY_FOOD_LOGS));
+    setJournalEntries(loadState('journal', EMPTY_JOURNAL_ENTRIES));
+    setPatterns(loadState('patterns', EMPTY_PATTERNS));
+    setGuidance(loadState('guidance', EMPTY_GUIDANCE));
+    setNotifications(loadState('notifications', EMPTY_NOTIFICATIONS));
+  }, []);
+
+  const pushWakeEntry = (entry) => {
+    setWakeHistory(prev => [entry, ...prev.filter(e => e.date !== entry.date)].slice(0, 30));
+  };
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('healthsnap_wakeup_logs', JSON.stringify(wakeHistory));
+    } catch (e) {
+      console.warn("Unable to save wake-up history:", e);
+    }
+  }, [wakeHistory]);
+
+  // Wake-up reminder scheduler: checks every 30s while the app is open
+  useEffect(() => {
+    if (!wakeNotificationsEnabled) return;
+
+    const checkWakeUp = () => {
+      const match = String(sleep.wakeUp || '').trim().match(/^(\d{1,2}):(\d{2})\s*(am|pm)$/i);
+      if (!match) return;
+      let hour = parseInt(match[1], 10);
+      const minute = parseInt(match[2], 10);
+      if (hour === 12) hour = 0;
+      if (match[3].toLowerCase() === 'pm') hour += 12;
+
+      const now = new Date();
+      const todayKey = dateKey(now);
+      const wakeToday = new Date(now.getFullYear(), now.getMonth(), now.getDate(), hour, minute, 0);
+      const windowEnd = new Date(wakeToday.getTime() + 3 * 60 * 60 * 1000);
+
+      // Mark as missed if the wake-up window has passed without confirmation
+      if (now > windowEnd && localStorage.getItem('healthsnap_wakeup_date') !== todayKey) {
+        if (localStorage.getItem('healthsnap_missed_date') !== todayKey) {
+          localStorage.setItem('healthsnap_missed_date', todayKey);
+          const snoozes = todayKey === localStorage.getItem('healthsnap_snooze_date')
+            ? Number(localStorage.getItem('healthsnap_snooze_count') || '0')
+            : 0;
+          pushWakeEntry({
+            date: todayKey,
+            scheduled: String(sleep.wakeUp || ''),
+            actual: null,
+            differenceMin: null,
+            lateMin: null,
+            earlyMin: null,
+            onTime: false,
+            missed: true,
+            snoozes,
+            recordedAt: now.toISOString()
+          });
+        }
+        return;
+      }
+
+      if (now < wakeToday || now > windowEnd) return;
+
+      // Already confirmed today
+      if (localStorage.getItem('healthsnap_wakeup_date') === todayKey) return;
+
+      let forceDue = false;
+      const snoozeUntil = localStorage.getItem('healthsnap_snooze_until');
+      if (snoozeUntil) {
+        if (now.getTime() < Number(snoozeUntil)) return;
+        localStorage.removeItem('healthsnap_snooze_until');
+        forceDue = true;
+      }
+
+      // Already showed the reminder today (and wasn't snoozed)
+      if (!forceDue && localStorage.getItem('healthsnap_asked_date') === todayKey) return;
+
+      localStorage.setItem('healthsnap_asked_date', todayKey);
+      setWakeReminderActive(true);
+      setWakeReminderTime(sleep.wakeUp);
+
+      setNotifications(prev => [
+        {
+          id: `wakeup-${Date.now()}`,
+          type: 'wakeup',
+          title: '⏰ Wake-Up Reminder',
+          message: `It's around ${sleep.wakeUp}. Tap "I'm awake" in the reminder to start your day!`,
+          time: 'Now',
+          read: false,
+          icon: 'Bell'
+        },
+        ...prev
+      ]);
+
+      try {
+        if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {
+          new Notification('Good morning! 🌅', {
+            body: `Your wake-up time (${sleep.wakeUp}) has arrived. Open HealthSnap to log your wake-up.`,
+            tag: 'healthsnap-wakeup'
+          });
+        }
+      } catch (e) {
+        console.warn("Browser notification failed:", e.message);
+      }
+    };
+
+    checkWakeUp();
+    const intervalId = setInterval(checkWakeUp, 30000);
+    return () => clearInterval(intervalId);
+  }, [wakeNotificationsEnabled, sleep.wakeUp]);
 
   const showToast = (msg) => {
     setToastMessage(msg);
@@ -305,6 +462,141 @@ export function WellnessProvider({ children }) {
     }
   };
 
+  // Log / update last night sleep (connected to backend if authenticated)
+  const logSleep = async (data) => {
+    const hours = Math.max(0, Math.min(24, data.hours ?? sleep.hours));
+    const h = Math.floor(hours);
+    const m = Math.round((hours - h) * 60);
+    const durationStr = `${h}h ${String(m).padStart(2, '0')}m`;
+    const quality = data.quality || sleep.quality;
+    const efficiency = data.efficiency ?? sleep.efficiency;
+    const deepSleep = data.deepSleep || sleep.deepSleep;
+    const remSleep = data.remSleep || sleep.remSleep;
+    const lightSleep = data.lightSleep || sleep.lightSleep;
+
+    setSleep(prev => {
+      const weeklyData = (prev.weeklyData || []).map((d, i) => {
+        if (i === prev.weeklyData.length - 1) {
+          return { ...d, hours: Math.round(hours * 100) / 100, duration: durationStr, quality };
+        }
+        return d;
+      });
+      return {
+        ...prev,
+        hours: Math.round(hours * 100) / 100,
+        lastNightDuration: durationStr,
+        quality,
+        efficiency,
+        ...(data.bedtime ? { bedtime: data.bedtime } : {}),
+        ...(data.wakeUp ? { wakeUp: data.wakeUp } : {}),
+        deepSleep,
+        remSleep,
+        lightSleep,
+        weeklyData
+      };
+    });
+
+    showToast(`🌙 Sleep updated: ${durationStr}`);
+
+    if (authMode === 'backend') {
+      try {
+        await api.sleep.log({
+          hours,
+          duration_str: durationStr,
+          quality,
+          efficiency,
+          deep_sleep: deepSleep,
+          rem_sleep: remSleep,
+          light_sleep: lightSleep
+        });
+      } catch (e) {
+        console.warn("Backend sleep sync failed:", e.message);
+      }
+    }
+  };
+
+  // Wake-up reminder controls
+  const enableWakeNotifications = async () => {
+    try {
+      if (typeof Notification !== 'undefined' && Notification.permission === 'default') {
+        await Notification.requestPermission();
+      }
+    } catch (e) {
+      console.warn("Notification permission request failed:", e.message);
+    }
+    localStorage.setItem('healthsnap_wakeup_enabled', 'true');
+    setWakeNotificationsEnabled(true);
+    showToast('⏰ Wake-up reminders enabled.');
+  };
+
+  const disableWakeNotifications = () => {
+    localStorage.setItem('healthsnap_wakeup_enabled', 'false');
+    setWakeNotificationsEnabled(false);
+    setWakeReminderActive(false);
+    localStorage.removeItem('healthsnap_snooze_until');
+    showToast('Wake-up reminders turned off.');
+  };
+
+  const logWakeUp = () => {
+    setWakeReminderActive(false);
+    const now = new Date();
+    const timeLabel = now.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+    const scheduled = String(sleep.wakeUp || timeLabel);
+    const actualMin = now.getHours() * 60 + now.getMinutes();
+    const schedMin = timeToMinutes(scheduled);
+    const todayKey = dateKey(now);
+    const snoozes = todayKey === localStorage.getItem('healthsnap_snooze_date')
+      ? Number(localStorage.getItem('healthsnap_snooze_count') || '0')
+      : 0;
+
+    localStorage.setItem('healthsnap_wakeup_date', todayKey);
+    localStorage.removeItem('healthsnap_snooze_until');
+    localStorage.removeItem('healthsnap_asked_date');
+    localStorage.removeItem('healthsnap_missed_date');
+    localStorage.removeItem('healthsnap_snooze_count');
+    localStorage.removeItem('healthsnap_snooze_date');
+
+    const diff = schedMin === null ? null : actualMin - schedMin;
+    pushWakeEntry({
+      date: todayKey,
+      scheduled,
+      actual: timeLabel,
+      differenceMin: diff,
+      lateMin: diff !== null && diff > 15 ? diff : null,
+      earlyMin: diff !== null && diff < 0 ? -diff : null,
+      onTime: diff !== null && diff >= -15 && diff <= 15,
+      missed: false,
+      snoozes,
+      recordedAt: now.toISOString()
+    });
+
+    setNotifications(prev => [
+      {
+        id: `wakeup-logged-${Date.now()}`,
+        type: 'wakeup',
+        title: '🌅 Wake-Up Logged',
+        message: `You logged your wake-up at ${timeLabel}${diff !== null && diff > 15 ? ` — ${diff} minutes late` : ''}. Great start to your day!`,
+        time: 'Now',
+        read: false,
+        icon: 'Sun'
+      },
+      ...prev
+    ]);
+    showToast(`🌅 Good morning! Wake-up logged at ${timeLabel}.`);
+  };
+
+  const snoozeWakeUp = (minutes = 10) => {
+    setWakeReminderActive(false);
+    const todayKey = dateKey(new Date());
+    const count = todayKey === localStorage.getItem('healthsnap_snooze_date')
+      ? Number(localStorage.getItem('healthsnap_snooze_count') || '0')
+      : 0;
+    localStorage.setItem('healthsnap_snooze_date', todayKey);
+    localStorage.setItem('healthsnap_snooze_count', String(count + 1));
+    localStorage.setItem('healthsnap_snooze_until', String(Date.now() + minutes * 60 * 1000));
+    showToast(`😴 Snoozed. I'll remind you again in ${minutes} minutes.`);
+  };
+
   // Quick activity adder
   const logQuickSteps = async (stepAmount) => {
     let updatedSteps = 0;
@@ -427,7 +719,15 @@ export function WellnessProvider({ children }) {
       }
     }
     tokenStorage.clear();
-    localStorage.clear();
+    // Wipe only the current account's scoped data; other accounts stay intact
+    const activeEmail = localStorage.getItem(ACTIVE_USER_KEY);
+    if (activeEmail) {
+      localStorage.removeItem(ACTIVE_USER_KEY);
+      ['user', 'score', 'activity', 'sleep', 'food', 'journal', 'patterns', 'guidance', 'notifications']
+        .forEach(suffix => localStorage.removeItem(scopedKey(suffix, activeEmail)));
+    } else {
+      localStorage.clear();
+    }
     setIsAuth(false);
     setAuthMode('demo');
     setUser(INITIAL_USER);
@@ -477,6 +777,7 @@ export function WellnessProvider({ children }) {
         setIsAuth,
         authMode,
         setAuthMode,
+        switchUserScope,
         activeView,
         setActiveView,
         theme,
@@ -487,6 +788,15 @@ export function WellnessProvider({ children }) {
         addJournalEntry,
         addVoiceLog,
         logQuickSteps,
+        logSleep,
+        wakeNotificationsEnabled,
+        enableWakeNotifications,
+        disableWakeNotifications,
+        wakeReminderActive,
+        wakeReminderTime,
+        wakeHistory,
+        logWakeUp,
+        snoozeWakeUp,
         toggleGuidanceHabit,
         markNotificationRead,
         markAllNotificationsRead,

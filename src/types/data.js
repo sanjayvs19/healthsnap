@@ -18,6 +18,72 @@ export const INITIAL_USER = {
   }
 };
 
+// Fresh, empty profile for newly authenticated accounts.
+// Each email keeps its own data; a brand-new account starts from these
+// instead of inheriting the shared demo seed.
+export const EMPTY_USER = {
+  name: "",
+  email: "",
+  avatar: "",
+  goals: [],
+  settings: {
+    notifications: true,
+    edgeAi: true,
+    dataSharing: false,
+    darkMode: false
+  }
+};
+
+export const EMPTY_WELLNESS_SCORE = {
+  score: 0,
+  max: 100,
+  status: "Getting Started",
+  trend: "Start tracking today",
+  subScores: {
+    activity: 0,
+    sleep: 0,
+    nutrition: 0,
+    journal: 0
+  }
+};
+
+export const EMPTY_ACTIVITY = {
+  steps: 0,
+  goal: 8000,
+  activeMinutes: 0,
+  activeGoal: 60,
+  distanceKm: 0,
+  caloriesBurned: 0,
+  percentAchieved: 0,
+  weeklyData: [],
+  hourlyDistribution: []
+};
+
+export const EMPTY_SLEEP = {
+  lastNightDuration: "Not recorded",
+  hours: 0,
+  goalDuration: "7–8h",
+  quality: "--",
+  efficiency: 0,
+  bedtime: "--",
+  wakeUp: "--",
+  deepSleep: "--",
+  remSleep: "--",
+  lightSleep: "--",
+  weeklyData: [],
+  awarenessMessage: ""
+};
+
+export const EMPTY_FOOD_LOGS = [];
+
+export const EMPTY_JOURNAL_ENTRIES = [];
+
+export const EMPTY_PATTERNS = [];
+
+export const EMPTY_GUIDANCE = [];
+
+export const EMPTY_NOTIFICATIONS = [];
+
 export const INITIAL_WELLNESS_SCORE = {
   score: 78,
   max: 100,
@@ -64,6 +130,8 @@ export const INITIAL_SLEEP = {
   goalDuration: "7–8h",
   quality: "Good",
   efficiency: 84,
+  bedtime: "10:45 PM",
+  wakeUp: "5:15 AM",
   deepSleep: "1h 45m",
   remSleep: "1h 20m",
   lightSleep: "3h 25m",

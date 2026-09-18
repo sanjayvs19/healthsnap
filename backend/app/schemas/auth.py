@@ -11,6 +11,14 @@ class UserLogin(BaseModel):
     email: EmailStr
     password: str
 
+class ForgotPasswordRequest(BaseModel):
+    email: EmailStr
+
+class ResetPasswordRequest(BaseModel):
+    email: EmailStr
+    token: str = Field(..., min_length=8, max_length=200)
+    new_password: str = Field(..., min_length=6, max_length=128)
+
 from typing import Optional, List, Dict, Any, Union
 
 class UserResponse(BaseModel):

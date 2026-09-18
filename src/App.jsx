@@ -4,6 +4,7 @@ import LandingPage from './components/landing/LandingPage';
 import Header from './components/common/Header';
 import Sidebar from './components/common/Sidebar';
 import MobileNav from './components/common/MobileNav';
+import WakeUpReminder from './components/common/WakeUpReminder';
 
 import DashboardView from './components/dashboard/DashboardView';
 import SnapFoodView from './components/snap/SnapFoodView';
@@ -97,6 +98,9 @@ function AppContent() {
 
       {/* Floating Toast Alerts */}
       {toastMessage && <Toast message={toastMessage} />}
+
+      {/* Wake-Up Reminder Banner */}
+      <WakeUpReminder />
 
       <style>{`
         @media (max-width: 900px) {

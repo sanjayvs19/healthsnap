@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useWellness } from '../../context/WellnessContext';
 import { FOOD_PRESETS } from '../../types/data';
 import { api } from '../../services/api';
@@ -15,7 +15,8 @@ import {
   Wheat,
   Droplet,
   Save,
-  ScanLine
+  ScanLine,
+  X
 } from 'lucide-react';
 
 export default function SnapFoodView() {
@@ -30,6 +31,10 @@ export default function SnapFoodView() {
   const [savedToDiary, setSavedToDiary] = useState(false);
 
   const fileInputRef = useRef(null);
+  const videoRef = useRef(null);
+  const streamRef = useRef(null);
+  const [cameraActive, setCameraActive] = useState(false);
+  const [cameraError, setCameraError] = useState(null);
 
   const analysisStages = [
     "📷 Collecting visual signals & segmenting meal items...",
@@ -72,52 +77,117 @@ export default function SnapFoodView() {
     }, 2100);
   };
 
-  const handleFileUpload = async (e) => {
+  const analyzeImage = async (previewUrl, file) => {
+    setCustomImage(previewUrl);
+    setIsAnalyzing(true);
+    setHasAnalyzed(false);
+    setSavedToDiary(false);
+    setAnalysisStep(0);
+
+    try {
+      const res = await api.food.analyze(file);
+      setAnalysisStep(1);
+      setTimeout(() => setAnalysisStep(2), 500);
+      setTimeout(() => {
+        setSelectedFood({
+          id: `custom-${Date.now()}`,
+          name: res.food_name,
+          category: res.category,
+          image: previewUrl,
+          detectedItems: res.detected_items || ["Balanced Plate", "Protein", "Fiber"],
+          calories: res.nutrition?.calories || 520,
+          protein: res.nutrition?.protein || 24,
+          carbs: res.nutrition?.carbohydrates || 58,
+          fat: res.nutrition?.fat || 16,
+          fiber: res.nutrition?.fiber || 6,
+          suggestion: res.suggestion || "Nutrient-balanced meal recorded."
+        });
+        setIsAnalyzing(false);
+        setHasAnalyzed(true);
+      }, 1100);
+    } catch (err) {
+      console.warn("Backend analysis fallback to local estimation:", err.message);
+      triggerAnalysis(null, previewUrl);
+    }
+  };
+
+  const handleFileUpload = (e) => {
     const file = e.target.files?.[0];
     if (file) {
       const reader = new FileReader();
-      reader.onload = async (event) => {
-        const previewUrl = event.target?.result;
-        setCustomImage(previewUrl);
-        setIsAnalyzing(true);
-        setHasAnalyzed(false);
-        setSavedToDiary(false);
-        setAnalysisStep(0);
-
-        try {
-          const res = await api.food.analyze(file);
-          setAnalysisStep(1);
-          setTimeout(() => setAnalysisStep(2), 500);
-          setTimeout(() => {
-            setSelectedFood({
-              id: `custom-${Date.now()}`,
-              name: res.food_name,
-              category: res.category,
-              image: previewUrl,
-              detectedItems: res.detected_items || ["Balanced Plate", "Protein", "Fiber"],
-              calories: res.nutrition?.calories || 520,
-              protein: res.nutrition?.protein || 24,
-              carbs: res.nutrition?.carbohydrates || 58,
-              fat: res.nutrition?.fat || 16,
-              fiber: res.nutrition?.fiber || 6,
-              suggestion: res.suggestion || "Nutrient-balanced meal recorded."
-            });
-            setIsAnalyzing(false);
-            setHasAnalyzed(true);
-          }, 1100);
-        } catch (err) {
-          console.warn("Backend analysis fallback to local estimation:", err.message);
-          triggerAnalysis(null, previewUrl);
-        }
+      reader.onload = (event) => {
+        analyzeImage(event.target?.result, file);
       };
       reader.readAsDataURL(file);
     }
   };
 
-  const handleTakePhotoSim = () => {
-    // Cycles to next preset or re-analyzes current
-    const nextIndex = (FOOD_PRESETS.findIndex(p => p.id === selectedFood?.id) + 1) % FOOD_PRESETS.length;
+  const stopCamera = () => {
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach((track) => track.stop());
+      streamRef.current = null;
+      if (videoRef.current) {
+        videoRef.current.srcObject = null;
+      }
+    }
+    setCameraActive(false);
+  };
+
+  useEffect(() => {
+    return () => {
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach((track) => track.stop());
+      }
+    };
+  }, []);
+
+  const runSimulatedPhoto = () => {
+    const nextIndex = (FOOD_PRESETS.findIndex((p) => p.id === selectedFood?.id) + 1) % FOOD_PRESETS.length;
     triggerAnalysis(FOOD_PRESETS[nextIndex]);
+  };
+
+  const startCamera = async () => {
+    setCameraError(null);
+    const hasMedia = navigator.mediaDevices && typeof navigator.mediaDevices.getUserMedia === 'function';
+    if (!hasMedia) {
+      setCameraError('Camera is not supported in this browser. Showing a demo meal instead.');
+      runSimulatedPhoto();
+      return;
+    }
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: { ideal: 'environment' }, width: { ideal: 1280 }, height: { ideal: 720 } },
+        audio: false
+      });
+      streamRef.current = stream;
+      setCameraActive(true);
+      setTimeout(() => {
+        const video = videoRef.current;
+        if (video) {
+          video.srcObject = stream;
+          video.play().catch(() => {});
+        }
+      }, 0);
+    } catch (err) {
+      console.warn("Camera unavailable, falling back to demo meal:", err.message);
+      setCameraError(`Camera unavailable (${err.message}). Showing a demo meal instead.`);
+      runSimulatedPhoto();
+    }
+  };
+
+  const handleCapturePhoto = () => {
+    const video = videoRef.current;
+    if (!video || video.videoWidth === 0) return;
+    const canvas = document.createElement('canvas');
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
+    canvas.toBlob((blob) => {
+      if (!blob) return;
+      stopCamera();
+      const file = new File([blob], 'camera-capture.jpg', { type: 'image/jpeg' });
+      analyzeImage(URL.createObjectURL(file), file);
+    }, 'image/jpeg', 0.9);
   };
 
   const handleSaveMeal = () => {
@@ -183,7 +253,19 @@ export default function SnapFoodView() {
             alignItems: 'center',
             justifyContent: 'center'
           }}>
-            {currentImg ? (
+            {cameraActive ? (
+              <video
+                ref={videoRef}
+                autoPlay
+                playsInline
+                muted
+                style={{
+                  width: '100%',
+                  height: '100%',
+                  objectFit: 'cover'
+                }}
+              />
+            ) : currentImg ? (
               <img
                 src={currentImg}
                 alt="Meal preview"
@@ -270,26 +352,48 @@ export default function SnapFoodView() {
             )}
           </div>
 
-          {/* Action Buttons: Take Photo & Upload Image */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginTop: '18px' }}>
-            <button
-              onClick={handleTakePhotoSim}
-              disabled={isAnalyzing}
-              className="btn-primary"
-              style={{ padding: '12px 16px', fontSize: '0.92rem' }}
-            >
-              <Camera size={18} />
-              <span>Take Photo</span>
-            </button>
+          {/* Action Buttons: Take Photo / Capture & Cancel, Upload Image */}
+          <div style={{ display: 'grid', gridTemplateColumns: cameraActive ? 'repeat(3, 1fr)' : '1fr 1fr', gap: '12px', marginTop: '18px' }}>
+            {cameraActive ? (
+              <>
+                <button
+                  onClick={handleCapturePhoto}
+                  disabled={isAnalyzing}
+                  className="btn-primary"
+                  style={{ padding: '12px 8px', fontSize: '0.88rem' }}
+                >
+                  <Camera size={18} />
+                  <span>Capture</span>
+                </button>
+                <button
+                  onClick={stopCamera}
+                  className="btn-secondary"
+                  style={{ padding: '12px 8px', fontSize: '0.88rem' }}
+                >
+                  <X size={18} />
+                  <span>Close</span>
+                </button>
+              </>
+            ) : (
+              <button
+                onClick={startCamera}
+                disabled={isAnalyzing}
+                className="btn-primary"
+                style={{ padding: '12px 8px', fontSize: '0.88rem' }}
+              >
+                <Camera size={18} />
+                <span>Take Photo</span>
+              </button>
+            )}
 
             <button
               onClick={() => fileInputRef.current?.click()}
               disabled={isAnalyzing}
               className="btn-secondary"
-              style={{ padding: '12px 16px', fontSize: '0.92rem' }}
+              style={{ padding: '12px 8px', fontSize: '0.88rem' }}
             >
               <Upload size={18} />
-              <span>Upload Image</span>
+              <span>Upload</span>
             </button>
 
             <input
@@ -297,9 +401,24 @@ export default function SnapFoodView() {
               ref={fileInputRef}
               onChange={handleFileUpload}
               accept="image/*"
+              capture="environment"
               style={{ display: 'none' }}
             />
           </div>
+
+          {cameraError && (
+            <div style={{
+              marginTop: '14px',
+              fontSize: '0.78rem',
+              color: '#f59e0b',
+              background: 'rgba(245, 158, 11, 0.12)',
+              border: '1px solid rgba(245, 158, 11, 0.3)',
+              padding: '8px 12px',
+              borderRadius: 'var(--radius-sm)'
+            }}>
+              {cameraError}
+            </div>
+          )}
 
           {/* Preset Food Dishes for Instant Demo */}
           <div style={{ marginTop: '22px' }}>

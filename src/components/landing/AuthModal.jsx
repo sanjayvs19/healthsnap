@@ -1,16 +1,24 @@
 import React, { useState } from 'react';
 import { useWellness } from '../../context/WellnessContext';
 import { api, tokenStorage } from '../../services/api';
-import { X, Sparkles, Shield, User, Mail, Lock, ArrowRight, AlertCircle, Loader2 } from 'lucide-react';
+import { X, Sparkles, Shield, User, Mail, Lock, KeyRound, ArrowRight, AlertCircle, Loader2 } from 'lucide-react';
 
 export default function AuthModal({ isOpen, onClose }) {
-  const { setUser, setIsAuth, setActiveView, showToast, setAuthMode, refreshDashboardFromBackend } = useWellness();
+  const { setUser, setIsAuth, setActiveView, showToast, setAuthMode, switchUserScope, refreshDashboardFromBackend } = useWellness();
   const [mode, setMode] = useState('login'); // 'login', 'signup', 'demo'
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState(null);
+
+  // Password recovery state
+  const [showReset, setShowReset] = useState(false);
+  const [resetStep, setResetStep] = useState('email'); // 'email' | 'key'
+  const [resetEmail, setResetEmail] = useState('');
+  const [resetToken, setResetToken] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
 
   if (!isOpen) return null;
 
@@ -53,6 +61,7 @@ export default function AuthModal({ isOpen, onClose }) {
 
       setAuthMode('backend');
       setIsAuth(true);
+      if (switchUserScope) switchUserScope(res.user.email);
       setActiveView('dashboard');
       onClose();
 
@@ -79,6 +88,78 @@ export default function AuthModal({ isOpen, onClose }) {
     setActiveView('dashboard');
     onClose();
     showToast("Entered Demo Mode. Sample wellness data is active.");
+  };
+
+  const handleForgotReset = async (e) => {
+    e.preventDefault();
+    setErrorMessage(null);
+    setIsLoading(true);
+
+    try {
+      const res = await api.auth.forgotPassword({ email: resetEmail.trim() });
+      setResetToken(res.reset_token || '');
+      setResetStep('key');
+      showToast(res.message || 'Reset key generated.');
+    } catch (err) {
+      setErrorMessage(err.message || "Unable to process your request. Please try again.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleResetPassword = async (e) => {
+    e.preventDefault();
+    setErrorMessage(null);
+
+    if (!resetToken.trim()) {
+      setErrorMessage("Please enter your reset key.");
+      return;
+    }
+    if (newPassword.length < 6) {
+      setErrorMessage("Password must be at least 6 characters long.");
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      setErrorMessage("Passwords do not match. Please try again.");
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      const res = await api.auth.resetPassword({
+        email: resetEmail.trim(),
+        token: resetToken.trim(),
+        new_password: newPassword
+      });
+      showToast(res.message || "Password updated successfully!");
+      setShowReset(false);
+      setResetStep('email');
+      setResetToken('');
+      setResetEmail('');
+      setNewPassword('');
+      setConfirmPassword('');
+      setPassword('');
+    } catch (err) {
+      setErrorMessage(err.message || "Unable to reset your password. Please try again.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const openResetFlow = () => {
+    setErrorMessage(null);
+    setShowReset(true);
+    setResetStep('email');
+    setResetEmail(email.trim());
+    setResetToken('');
+    setNewPassword('');
+    setConfirmPassword('');
+  };
+
+  const closeResetFlow = () => {
+    setShowReset(false);
+    setResetStep('email');
+    setErrorMessage(null);
   };
 
   return (
@@ -244,78 +325,303 @@ export default function AuthModal({ isOpen, onClose }) {
               </div>
             )}
 
-            <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-              {mode === 'signup' && (
-                <div>
-                  <label style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '5px', display: 'block' }}>
-                    Full Name
-                  </label>
-                  <div style={{ position: 'relative' }}>
-                    <User size={16} style={{ position: 'absolute', left: '14px', top: '14px', color: 'var(--text-muted)' }} />
-                    <input
-                      type="text"
-                      value={name}
-                      onChange={(e) => setName(e.target.value)}
-                      placeholder="Alex Morgan"
-                      required={mode === 'signup'}
-                      disabled={isLoading}
-                      style={{ width: '100%', padding: '11px 14px 11px 38px', fontSize: '0.9rem' }}
-                    />
-                  </div>
-                </div>
-              )}
-
-              <div>
-                <label style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '5px', display: 'block' }}>
-                  Email Address
-                </label>
-                <div style={{ position: 'relative' }}>
-                  <Mail size={16} style={{ position: 'absolute', left: '14px', top: '14px', color: 'var(--text-muted)' }} />
-                  <input
-                    type="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder="name@example.com"
-                    required
-                    disabled={isLoading}
-                    style={{ width: '100%', padding: '11px 14px 11px 38px', fontSize: '0.9rem' }}
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '5px', display: 'block' }}>
-                  Password
-                </label>
-                <div style={{ position: 'relative' }}>
-                  <Lock size={16} style={{ position: 'absolute', left: '14px', top: '14px', color: 'var(--text-muted)' }} />
-                  <input
-                    type="password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    placeholder="••••••••"
-                    required
-                    disabled={isLoading}
-                    style={{ width: '100%', padding: '11px 14px 11px 38px', fontSize: '0.9rem' }}
-                  />
-                </div>
-              </div>
-
-              <button
-                type="submit"
-                className="btn-primary"
-                disabled={isLoading}
-                style={{ width: '100%', padding: '12px', marginTop: '6px' }}
-              >
-                {isLoading ? (
+            <form onSubmit={showReset ? (resetStep === 'email' ? handleForgotReset : handleResetPassword) : handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+              {showReset ? (
+                resetStep === 'email' ? (
                   <>
-                    <Loader2 size={18} className="animate-spin" />
-                    <span>Connecting...</span>
+                    <div style={{ marginBottom: '2px' }}>
+                      <h4 style={{ fontSize: '1.05rem', fontWeight: 800, color: 'var(--text-main)', margin: '0 0 4px 0' }}>
+                        Forgot your password?
+                      </h4>
+                      <p style={{ fontSize: '0.84rem', color: 'var(--text-secondary)', margin: 0, lineHeight: 1.5 }}>
+                        Enter the email you signed up with. We'll generate a one-time reset key so you can choose a new password.
+                      </p>
+                    </div>
+
+                    <div>
+                      <label style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '5px', display: 'block' }}>
+                        Email Address
+                      </label>
+                      <div style={{ position: 'relative' }}>
+                        <Mail size={16} style={{ position: 'absolute', left: '14px', top: '14px', color: 'var(--text-muted)' }} />
+                        <input
+                          type="email"
+                          value={resetEmail}
+                          onChange={(e) => setResetEmail(e.target.value)}
+                          placeholder="name@example.com"
+                          required
+                          disabled={isLoading}
+                          style={{ width: '100%', padding: '11px 14px 11px 38px', fontSize: '0.9rem' }}
+                        />
+                      </div>
+                    </div>
+
+                    <button
+                      type="submit"
+                      className="btn-primary"
+                      disabled={isLoading}
+                      style={{ width: '100%', padding: '12px', marginTop: '6px' }}
+                    >
+                      {isLoading ? (
+                        <>
+                          <Loader2 size={18} className="animate-spin" />
+                          <span>Generating key...</span>
+                        </>
+                      ) : (
+                        <span>Send Reset Key</span>
+                      )}
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={closeResetFlow}
+                      className="btn-secondary"
+                      style={{ width: '100%', padding: '12px' }}
+                    >
+                      Back to Sign In
+                    </button>
                   </>
                 ) : (
-                  <span>{mode === 'signup' ? 'Create Account' : 'Sign In'}</span>
-                )}
-              </button>
+                  <>
+                    <div style={{ marginBottom: '2px' }}>
+                      <h4 style={{ fontSize: '1.05rem', fontWeight: 800, color: 'var(--text-main)', margin: '0 0 4px 0' }}>
+                        Set a new password
+                      </h4>
+                      <p style={{ fontSize: '0.84rem', color: 'var(--text-secondary)', margin: 0, lineHeight: 1.5 }}>
+                        Enter your reset key and choose a new password.
+                      </p>
+                    </div>
+
+                    {resetToken ? (
+                      <div style={{
+                        background: 'rgba(16, 185, 129, 0.1)',
+                        border: '1px solid rgba(16, 185, 129, 0.35)',
+                        borderRadius: 'var(--radius-md)',
+                        padding: '12px 14px',
+                        fontSize: '0.8rem',
+                        color: 'var(--text-main)',
+                        display: 'flex',
+                        alignItems: 'flex-start',
+                        gap: '8px'
+                      }}>
+                        <KeyRound size={16} color="var(--primary)" style={{ flexShrink: 0, marginTop: '1px' }} />
+                        <span>
+                          <strong>Your reset key</strong> (valid for 30 minutes). It would normally be emailed to you.<br />
+                          <code style={{ userSelect: 'all', fontSize: '0.82rem', wordBreak: 'break-all', color: 'var(--primary-dark)' }}>{resetToken}</code>
+                        </span>
+                      </div>
+                    ) : (
+                      <div style={{
+                        background: 'rgba(245, 158, 11, 0.1)',
+                        border: '1px solid rgba(245, 158, 11, 0.3)',
+                        borderRadius: 'var(--radius-md)',
+                        padding: '12px 14px',
+                        fontSize: '0.84rem',
+                        color: 'var(--text-secondary)',
+                        lineHeight: 1.5
+                      }}>
+                        <div style={{ fontWeight: 700, color: 'var(--text-main)', marginBottom: '4px' }}>
+                          We couldn't find an account for {resetEmail}
+                        </div>
+                        <p style={{ margin: '0 0 10px 0', fontSize: '0.82rem' }}>
+                          This email may be typed incorrectly, or it isn't registered with HealthSnap yet. You can create an account or try another email.
+                        </p>
+                        <div style={{ display: 'flex', gap: '8px' }}>
+                          <button
+                            type="button"
+                            onClick={() => { setMode('signup'); closeResetFlow(); }}
+                            className="btn-primary"
+                            style={{ padding: '9px 12px', fontSize: '0.8rem' }}
+                          >
+                            Create Account
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setResetStep('email')}
+                            className="btn-secondary"
+                            style={{ padding: '9px 12px', fontSize: '0.8rem' }}
+                          >
+                            Try Again
+                          </button>
+                        </div>
+                      </div>
+                    )}
+
+                    <div>
+                      <label style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '5px', display: 'block' }}>
+                        Reset Key
+                      </label>
+                      <div style={{ position: 'relative' }}>
+                        <KeyRound size={16} style={{ position: 'absolute', left: '14px', top: '14px', color: 'var(--text-muted)' }} />
+                        <input
+                          type="text"
+                          value={resetToken}
+                          onChange={(e) => setResetToken(e.target.value)}
+                          placeholder="Paste your reset key here"
+                          required
+                          disabled={isLoading}
+                          style={{ width: '100%', padding: '11px 14px 11px 38px', fontSize: '0.9rem' }}
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '5px', display: 'block' }}>
+                        New Password
+                      </label>
+                      <div style={{ position: 'relative' }}>
+                        <Lock size={16} style={{ position: 'absolute', left: '14px', top: '14px', color: 'var(--text-muted)' }} />
+                        <input
+                          type="password"
+                          value={newPassword}
+                          onChange={(e) => setNewPassword(e.target.value)}
+                          placeholder="At least 6 characters"
+                          required
+                          disabled={isLoading}
+                          style={{ width: '100%', padding: '11px 14px 11px 38px', fontSize: '0.9rem' }}
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '5px', display: 'block' }}>
+                        Confirm New Password
+                      </label>
+                      <div style={{ position: 'relative' }}>
+                        <Lock size={16} style={{ position: 'absolute', left: '14px', top: '14px', color: 'var(--text-muted)' }} />
+                        <input
+                          type="password"
+                          value={confirmPassword}
+                          onChange={(e) => setConfirmPassword(e.target.value)}
+                          placeholder="Re-enter your new password"
+                          required
+                          disabled={isLoading}
+                          style={{ width: '100%', padding: '11px 14px 11px 38px', fontSize: '0.9rem' }}
+                        />
+                      </div>
+                    </div>
+
+                    <button
+                      type="submit"
+                      className="btn-primary"
+                      disabled={isLoading}
+                      style={{ width: '100%', padding: '12px', marginTop: '6px' }}
+                    >
+                      {isLoading ? (
+                        <>
+                          <Loader2 size={18} className="animate-spin" />
+                          <span>Resetting...</span>
+                        </>
+                      ) : (
+                        <span>Reset Password</span>
+                      )}
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={closeResetFlow}
+                      className="btn-secondary"
+                      style={{ width: '100%', padding: '12px' }}
+                    >
+                      Back to Sign In
+                    </button>
+                  </>
+                )
+              ) : (
+                <>
+                  {mode === 'signup' && (
+                    <div>
+                      <label style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '5px', display: 'block' }}>
+                        Full Name
+                      </label>
+                      <div style={{ position: 'relative' }}>
+                        <User size={16} style={{ position: 'absolute', left: '14px', top: '14px', color: 'var(--text-muted)' }} />
+                        <input
+                          type="text"
+                          value={name}
+                          onChange={(e) => setName(e.target.value)}
+                          placeholder="Alex Morgan"
+                          required={mode === 'signup'}
+                          disabled={isLoading}
+                          style={{ width: '100%', padding: '11px 14px 11px 38px', fontSize: '0.9rem' }}
+                        />
+                      </div>
+                    </div>
+                  )}
+
+                  <div>
+                    <label style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '5px', display: 'block' }}>
+                      Email Address
+                    </label>
+                    <div style={{ position: 'relative' }}>
+                      <Mail size={16} style={{ position: 'absolute', left: '14px', top: '14px', color: 'var(--text-muted)' }} />
+                      <input
+                        type="email"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        placeholder="name@example.com"
+                        required
+                        disabled={isLoading}
+                        style={{ width: '100%', padding: '11px 14px 11px 38px', fontSize: '0.9rem' }}
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '5px', display: 'block' }}>
+                      Password
+                    </label>
+                    <div style={{ position: 'relative' }}>
+                      <Lock size={16} style={{ position: 'absolute', left: '14px', top: '14px', color: 'var(--text-muted)' }} />
+                      <input
+                        type="password"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        placeholder={mode === 'signup' ? 'At least 6 characters' : '••••••••'}
+                        required
+                        disabled={isLoading}
+                        style={{ width: '100%', padding: '11px 14px 11px 38px', fontSize: '0.9rem' }}
+                      />
+                    </div>
+                  </div>
+
+                  {mode === 'login' && (
+                    <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '2px' }}>
+                      <button
+                        type="button"
+                        onClick={openResetFlow}
+                        disabled={isLoading}
+                        style={{
+                          background: 'none',
+                          border: 'none',
+                          cursor: 'pointer',
+                          fontSize: '0.82rem',
+                          fontWeight: 600,
+                          color: 'var(--primary)'
+                        }}
+                      >
+                        Forgot password?
+                      </button>
+                    </div>
+                  )}
+
+                  <button
+                    type="submit"
+                    className="btn-primary"
+                    disabled={isLoading}
+                    style={{ width: '100%', padding: '12px', marginTop: '6px' }}
+                  >
+                    {isLoading ? (
+                      <>
+                        <Loader2 size={18} className="animate-spin" />
+                        <span>Connecting...</span>
+                      </>
+                    ) : (
+                      <span>{mode === 'signup' ? 'Create Account' : 'Sign In'}</span>
+                    )}
+                  </button>
+                </>
+              )}
             </form>
           </>
         )}

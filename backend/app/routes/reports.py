@@ -168,7 +168,7 @@ def fetch_user_data_for_range(
     } for s in sleeps]
 
     food_list = [{
-        "name": f.name,
+        "name": f.title or f.name,
         "category": f.category,
         "calories": f.calories,
         "protein": f.protein,
