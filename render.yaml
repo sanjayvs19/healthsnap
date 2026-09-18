@@ -22,7 +22,7 @@ services:
         value: 1440
       # Allow requests from the deployed frontend (update if your frontend URL changes)
       - key: FRONTEND_CORS_ORIGINS
-        value: '["https://healthsnap-8l0v.onrender.com","http://localhost:5173","http://localhost:3000"]'
+        value: '["https://healthsnap-omega.vercel.app","http://localhost:5173","http://localhost:3000"]'
 
   # ── Frontend (Vite / React — Static Site) ─────────────────────────────────
   - type: static
